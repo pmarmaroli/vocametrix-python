@@ -12,10 +12,10 @@ Official Python SDK for the [Vocametrix API](https://www.vocametrix.com/api-docs
 
 **Vocametrix is a commercial API. You need an account to use this SDK.**
 
-- [Sign up](https://www.vocametrix.com/registration) — create an account and get your API key.
-- [Pricing](https://www.vocametrix.com/pricing) — see current rates and plans.
+- [Sign up](https://www.vocametrix.com/registration) — create an account and get your API key. New accounts include a **free trial** (5 minutes of analysis or 5 API credits, whichever comes first) so you can run the quickstart below without entering payment details.
+- [Pricing](https://www.vocametrix.com/pricing) — see plans and rates once your trial is used up.
 
-API access is paid — see the pricing page for current rates. Once you have a key, every call is one `VOCAMETRIX_API_KEY` env var away.
+Once you have a key, every call is one `VOCAMETRIX_API_KEY` env var away.
 
 ## Install
 
