@@ -161,9 +161,14 @@ See [vocametrix-examples](https://github.com/pmarmaroli/vocametrix-examples) for
 - [Interactive docs](https://www.vocametrix.com/api-docs)
 - [OpenAPI 3.1 spec](https://www.vocametrix.com/openapi.json) — for typed client generation or Swagger UI
 
-## Related SDKs
+## Related projects
 
-- [vocametrix-js](https://github.com/pmarmaroli/vocametrix-js) — JavaScript/TypeScript SDK (`npm install vocametrix`)
+The Vocametrix ecosystem:
+
+- 📘 **[Vocametrix API documentation](https://www.vocametrix.com/api-docs)** — full reference for all 48 endpoints (clinical voice quality, pronunciation assessment, speech-to-text, phoneme detection, prosody similarity, eGeMAPS feature extraction, and more).
+- 📐 **[OpenAPI 3.1 specification](https://www.vocametrix.com/openapi.json)** — machine-readable API schema. Generate clients in any language.
+- 🟦 **[vocametrix-js](https://github.com/pmarmaroli/vocametrix-js)** — official TypeScript / JavaScript SDK (`npm install vocametrix`).
+- 🤖 **[vocametrix-mcp](https://github.com/pmarmaroli/vocametrix-mcp)** — official MCP server for Claude, Cursor, Zed, Windsurf, and any MCP-compatible agent.
 
 ## Contributing
 
