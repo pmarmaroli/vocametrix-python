@@ -8,6 +8,15 @@
 
 Official Python SDK for the [Vocametrix API](https://www.vocametrix.com/api-docs) — voice analysis, speech therapy, and acoustic measurement for speech-language pathologists, voice researchers, and developers.
 
+## Get an API key
+
+**Vocametrix is a commercial API. You need an account to use this SDK.**
+
+- [Sign up](https://www.vocametrix.com/registration) — create an account and get your API key.
+- [Pricing](https://www.vocametrix.com/pricing) — see current rates and plans.
+
+API access is paid — see the pricing page for current rates. Once you have a key, every call is one `VOCAMETRIX_API_KEY` env var away.
+
 ## Install
 
 ```bash
@@ -18,29 +27,36 @@ Requires Python ≥ 3.9.
 
 ## 30-second quickstart
 
+```bash
+export VOCAMETRIX_API_KEY="your-api-key-here"
+```
+
 ```python
 from vocametrix import VocametrixClient
 
-client = VocametrixClient(api_key="your-api-key")  # or set VOCAMETRIX_API_KEY env var
+client = VocametrixClient()  # reads VOCAMETRIX_API_KEY from environment
 
 # AVQI — clinically validated dysphonia score (Maryn & Weenink 2015)
 result = client.avqi.calculate(sustained_vowel="vowel.wav")
-print(result.AVQI)          # e.g. 1.8 → normal (< 2.97)
-print(result.CPP, result.HNR25)
+print(result["AVQI"])    # e.g. 1.8 → normal (threshold: 2.97)
+print(result["CPP"], result["HNR25"])
 ```
-
-Get an API key at [https://www.vocametrix.com/registration](https://www.vocametrix.com/registration).
 
 ## Authentication
 
-Pass your API key directly or via the `VOCAMETRIX_API_KEY` environment variable:
+Set the `VOCAMETRIX_API_KEY` environment variable, or pass it explicitly:
 
 ```python
-import os
 from vocametrix import VocametrixClient
 
-client = VocametrixClient(api_key=os.environ["VOCAMETRIX_API_KEY"])
+# From env var (recommended — never hardcode keys)
+client = VocametrixClient()
+
+# Explicit key (e.g. loaded from a secrets manager)
+client = VocametrixClient(api_key="va_...")
 ```
+
+Never hardcode API keys in source code. Use environment variables or a secrets manager.
 
 ## What's included
 
@@ -51,16 +67,15 @@ client = VocametrixClient(api_key=os.environ["VOCAMETRIX_API_KEY"])
 | `client.cpp` | Cepstral Peak Prominence |
 | `client.hnr` | Multi-band Harmonics-to-Noise Ratio |
 | `client.jitter_shimmer` | Jitter & shimmer (Teixeira & Gonçalves 2014) |
-| `client.spectral` | Spectral measures |
-| `client.formants` | Formants F1–F4 |
-| `client.vrp` | Voice Range Profile (ambitus) |
+| `client.vrp` | Voice Range Profile (ambitus / glissando) |
 | `client.pronunciation` | Pronunciation assessment (30+ locales) |
 | `client.transcription` | Async speech-to-text with SSE |
-| `client.tts` | Text-to-speech with character timing |
+| `client.tts` | Text-to-speech with per-character timing |
 | `client.phoneme` | Phoneme detection (French, Estonian) |
-| `client.stuttering` | Stuttering classification (async) |
-| `client.prosody` | Prosody similarity |
+| `client.stuttering` | Stuttering classification (async polling) |
+| `client.prosody` | Prosody similarity (model vs learner) |
 | `client.egemaps` | eGeMAPS 88-feature extraction |
+| `client.sound_level` | Sound level measurement (dB SPL) |
 
 ## Workflows
 
@@ -72,9 +87,9 @@ result = client.pronunciation.assess(
     reference_text="Hello, my name is Alex.",
     locale="en-US",
 )
-print(result.accuracy_score, result.fluency_score)
-for word in result.words:
-    print(word.word, word.accuracy_score)
+print(result["accuracyScore"], result["fluencyScore"])
+for word in result.get("words", []):
+    print(word["word"], word["accuracyScore"])
 ```
 
 ### Batch AVQI over a folder
@@ -82,10 +97,11 @@ for word in result.words:
 ```python
 import pathlib
 
-results = {}
 for wav in pathlib.Path("./recordings").glob("*.wav"):
-    results[wav.name] = client.avqi.calculate(sustained_vowel=str(wav))
-    print(f"{wav.name}: AVQI={results[wav.name].AVQI}")
+    result = client.avqi.calculate(sustained_vowel=str(wav))
+    avqi = result["AVQI"]
+    label = "Normal" if avqi < 2.97 else "Dysphonic"
+    print(f"{wav.name}: AVQI={avqi:.2f}  ({label})")
 ```
 
 ### Async transcription with SSE
@@ -97,16 +113,19 @@ for event in client.transcription.stream("recording.wav", locale="en-US"):
         print("Transcript:", event.display_text)
 ```
 
-### Async client (httpx AsyncClient)
+### Async client
 
 ```python
 import asyncio
 from vocametrix import AsyncVocametrixClient
 
 async def main():
-    async with AsyncVocametrixClient(api_key="...") as client:
-        result = await client.avqi.calculate(sustained_vowel="vowel.wav")
-        print(result.AVQI)
+    async with AsyncVocametrixClient() as client:
+        result = await client._aget(
+            "https://platform.vocametrix.com/api/calculate-avqi",
+            params={"svFileId": "..."},
+        )
+        print(result)
 
 asyncio.run(main())
 ```
@@ -115,28 +134,36 @@ asyncio.run(main())
 
 ```python
 from vocametrix.exceptions import (
-    VocametrixAuthError,       # 401
-    VocametrixRateLimitError,  # 429 — SDK retries automatically
-    VocametrixValidationError, # 422
-    VocametrixServerError,     # 5xx
+    VocametrixAuthError,       # 401 — bad or missing API key
+    VocametrixRateLimitError,  # 429 — SDK retries automatically (up to 3×)
+    VocametrixValidationError, # 422 — invalid parameter values
+    VocametrixServerError,     # 5xx — SDK retries automatically
 )
 
 try:
     result = client.avqi.calculate(sustained_vowel="vowel.wav")
 except VocametrixRateLimitError as e:
-    print(f"Rate limited. Retry after: {e.retry_after}s")
+    print(f"Rate limited. Retry after {e.retry_after}s")
 except VocametrixAuthError:
-    print("Check your API key")
+    print("Check your API key at https://www.vocametrix.com/registration")
 ```
 
 The SDK retries `429`, `500`, `502`, `503`, `504` with exponential backoff (up to 3 retries). Non-retriable errors (`4xx` except `429`) raise immediately.
 
-## Related
+## Longer examples
 
-- [vocametrix-examples](https://github.com/pmarmaroli/vocametrix-examples) — raw HTTP examples (no SDK)
-- [vocametrix-js](https://github.com/pmarmaroli/vocametrix-js) — JavaScript/TypeScript SDK
-- [API reference](https://www.vocametrix.com/api-docs)
-- [OpenAPI 3.1 spec](https://www.vocametrix.com/openapi.json)
+See [vocametrix-examples](https://github.com/pmarmaroli/vocametrix-examples) for:
+- End-to-end workflow scripts (batch pronunciation, full voice assessment, prosody loops)
+- Jupyter notebooks with cohort visualizations
+
+## API reference
+
+- [Interactive docs](https://www.vocametrix.com/api-docs)
+- [OpenAPI 3.1 spec](https://www.vocametrix.com/openapi.json) — for typed client generation or Swagger UI
+
+## Related SDKs
+
+- [vocametrix-js](https://github.com/pmarmaroli/vocametrix-js) — JavaScript/TypeScript SDK (`npm install vocametrix`)
 
 ## Contributing
 
@@ -145,13 +172,20 @@ git clone https://github.com/pmarmaroli/vocametrix-python
 cd vocametrix-python
 pip install -e ".[dev]"
 
-# Regenerate low-level client from OpenAPI spec
+# Regenerate the low-level client from the live OpenAPI spec
 python tasks.py regenerate
 
-# Run tests
+# Run unit tests (no API key needed — all mocked)
 pytest tests/unit/
+
+# Run integration tests (real API calls — requires VOCAMETRIX_TEST_API_KEY)
+pytest tests/integration/
 ```
+
+The `src/vocametrix/_generated/` directory is auto-generated. Do not edit it manually. All hand-written logic lives in `src/vocametrix/client.py`, `_namespaces.py`, `_http.py`, and `exceptions.py`.
 
 ## License
 
-MIT
+The `vocametrix` SDK is released under the [MIT License](LICENSE). You're free to use, modify, and redistribute the SDK source code.
+
+**Calling the Vocametrix API with this SDK requires an API key, which is issued with a paid Vocametrix account.** The SDK code is free; the service is not. See [pricing](https://www.vocametrix.com/pricing).
