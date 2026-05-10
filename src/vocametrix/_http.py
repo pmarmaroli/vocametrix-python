@@ -1,0 +1,162 @@
+"""
+Internal HTTP helpers: upload patterns, retry, SSE auth quirk.
+
+Never import from _generated inside this module — keep the two layers decoupled
+so the generated layer can be replaced without touching this code.
+"""
+
+from __future__ import annotations
+
+import time
+import warnings
+from pathlib import Path
+from typing import Any, Dict, Iterator, Optional, Union
+
+import httpx
+
+from .exceptions import VocametrixRateLimitError, VocametrixServerError, raise_for_status
+
+_RETRYABLE = {429, 500, 502, 503, 504}
+_MAX_RETRIES = 3
+_BASE_BACKOFF = 2.0  # seconds
+
+
+def _backoff(attempt: int, retry_after: Optional[int] = None) -> float:
+    if retry_after is not None:
+        return float(retry_after)
+    return _BASE_BACKOFF ** attempt
+
+
+def request_with_retry(
+    client: httpx.Client,
+    method: str,
+    url: str,
+    **kwargs: Any,
+) -> httpx.Response:
+    """Execute an HTTP request, retrying on transient errors."""
+    for attempt in range(_MAX_RETRIES + 1):
+        try:
+            resp = client.request(method, url, **kwargs)
+        except httpx.TransportError as exc:
+            if attempt == _MAX_RETRIES:
+                raise
+            time.sleep(_backoff(attempt))
+            continue
+
+        if resp.status_code not in _RETRYABLE or attempt == _MAX_RETRIES:
+            if not resp.is_success:
+                try:
+                    body = resp.json()
+                except Exception:
+                    body = resp.text
+                retry_after = None
+                if resp.status_code == 429:
+                    ra = resp.headers.get("Retry-After")
+                    retry_after = int(ra) if ra and ra.isdigit() else 60
+                    raise_for_status(resp.status_code, body)
+                raise_for_status(resp.status_code, body)
+            return resp
+
+        # Retriable — wait and retry
+        retry_after = None
+        if resp.status_code == 429:
+            ra = resp.headers.get("Retry-After")
+            retry_after = int(ra) if ra and ra.isdigit() else None
+        wait = _backoff(attempt, retry_after)
+        time.sleep(wait)
+
+    raise VocametrixServerError("Max retries exceeded")
+
+
+# ── Upload helpers ────────────────────────────────────────────────────────────
+
+AudioInput = Union[str, Path, bytes]
+
+
+def _read_audio(audio: AudioInput) -> bytes:
+    if isinstance(audio, bytes):
+        return audio
+    return Path(audio).read_bytes()
+
+
+def upload_assign_file_id(
+    client: httpx.Client,
+    base_url: str,
+    audio: AudioInput,
+    email: str = "sdk@vocametrix.com",
+) -> str:
+    """
+    assignFileId upload pattern — used by all Praat-backed calculators.
+    Returns the fileId string.
+    """
+    data = _read_audio(audio)
+    resp = request_with_retry(
+        client,
+        "POST",
+        f"{base_url}/api/assignFileId",
+        files={"audio": ("audio.wav", data, "audio/wav")},
+        data={"email": email},
+    )
+    return resp.json()["fileId"]
+
+
+def upload_blob_url(
+    client: httpx.Client,
+    base_url: str,
+    audio: AudioInput,
+) -> str:
+    """
+    get-blob-url pattern — used by pronunciation, STT, sound level.
+    Returns the blobURL string.
+    """
+    resp = request_with_retry(client, "POST", f"{base_url}/api/get-blob-url")
+    data = resp.json()
+    upload_url: str = data["uploadURL"]
+    blob_url: str = data["blobURL"]
+
+    audio_bytes = _read_audio(audio)
+    # Azure PUT — not retried (the signed URL is single-use)
+    put = client.put(
+        upload_url,
+        content=audio_bytes,
+        headers={"x-ms-blob-type": "BlockBlob", "Content-Type": "audio/wav"},
+    )
+    if not put.is_success:
+        raise VocametrixServerError(f"Azure upload failed: {put.status_code} {put.text}")
+
+    return blob_url
+
+
+# ── SSE streaming ─────────────────────────────────────────────────────────────
+
+def sse_stream(
+    base_url: str,
+    transcription_id: str,
+    api_key: str,
+    timeout: float = 700.0,
+) -> Iterator[Dict[str, Any]]:
+    """
+    Stream SSE events from /api/transcription-progress/:id.
+
+    Auth is via ?apiKey= query string — the X-API-Key header is intentionally
+    NOT used here because the browser EventSource API cannot send custom headers.
+    """
+    import json as _json
+
+    url = f"{base_url}/api/transcription-progress/{transcription_id}?apiKey={api_key}"
+    with httpx.stream("GET", url, timeout=timeout) as resp:
+        if not resp.is_success:
+            raise_for_status(resp.status_code, resp.text)
+        buffer = ""
+        for chunk in resp.iter_text():
+            buffer += chunk
+            while "\n\n" in buffer:
+                event_text, buffer = buffer.split("\n\n", 1)
+                data_line = next(
+                    (l[6:] for l in event_text.splitlines() if l.startswith("data:")), None
+                )
+                if data_line:
+                    try:
+                        yield _json.loads(data_line)
+                    except _json.JSONDecodeError:
+                        pass
