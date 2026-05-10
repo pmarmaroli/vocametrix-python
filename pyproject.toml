@@ -1,0 +1,86 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "vocametrix"
+version = "0.1.0"
+description = "Official Python SDK for the Vocametrix voice analysis API"
+readme = "README.md"
+license = { file = "LICENSE" }
+requires-python = ">=3.9"
+authors = [{ name = "Vocametrix", email = "contact@vocametrix.com" }]
+keywords = [
+  "voice-analysis", "speech-therapy", "avqi", "dsi", "jitter", "shimmer",
+  "pronunciation", "acoustic", "praat", "dysphonia", "vocametrix",
+]
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Intended Audience :: Developers",
+  "Intended Audience :: Healthcare Industry",
+  "Intended Audience :: Science/Research",
+  "License :: OSI Approved :: MIT License",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.9",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Topic :: Scientific/Engineering :: Medical Science Apps.",
+  "Topic :: Multimedia :: Sound/Audio :: Analysis",
+  "Typing :: Typed",
+]
+dependencies = [
+  "httpx>=0.25.0",
+  "pydantic>=2.0",
+  "sseclient-py>=1.8.0",
+]
+
+[project.urls]
+Homepage = "https://www.vocametrix.com"
+Documentation = "https://www.vocametrix.com/api-docs"
+Repository = "https://github.com/pmarmaroli/vocametrix-python"
+"API Reference" = "https://www.vocametrix.com/api-docs"
+"Examples" = "https://github.com/pmarmaroli/vocametrix-examples"
+"Bug Tracker" = "https://github.com/pmarmaroli/vocametrix-python/issues"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/vocametrix"]
+
+[tool.hatch.envs.default]
+dependencies = [
+  "pytest>=8.0",
+  "pytest-cov",
+  "pytest-asyncio>=0.23",
+  "respx>=0.20",
+  "ruff",
+  "mypy>=1.8",
+  "invoke",
+]
+
+[tool.hatch.envs.default.scripts]
+test = "pytest tests/unit/ -v --cov=src/vocametrix --cov-report=term-missing"
+test-integration = "pytest tests/integration/ -v"
+lint = "ruff check src/ tests/"
+typecheck = "mypy src/vocametrix"
+regenerate = "python tasks.py regenerate"
+
+[tool.ruff]
+line-length = 100
+target-version = "py39"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM"]
+
+[tool.mypy]
+python_version = "3.9"
+strict = true
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+
+[tool.coverage.run]
+source = ["src/vocametrix"]
+omit = ["src/vocametrix/_generated/*"]
