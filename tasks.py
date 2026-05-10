@@ -14,7 +14,7 @@ from pathlib import Path
 
 GENERATED_DIR = Path("src/vocametrix/_generated")
 OPENAPI_GENERATOR = "openapi-python-client"
-OPENAPI_GENERATOR_VERSION = "0.21.6"
+OPENAPI_GENERATOR_VERSION = "0.28.3"
 DEFAULT_SPEC_URL = "https://www.vocametrix.com/openapi.json"
 LOCAL_SPEC_FALLBACK = Path("../vocametrix-landing-page/public/openapi.json")
 
