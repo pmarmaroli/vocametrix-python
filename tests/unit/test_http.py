@@ -94,6 +94,59 @@ def test_upload_uses_mp3_content_type(tmp_path):
     assert captured_content_type.get("value") == "audio/mpeg"
 
 
+def test_bytes_mp3_gets_mp3_content_type():
+    from vocametrix._http import _audio_content_type
+    mp3_bytes = b"\xff\xfb" + b"\x00" * 100
+    assert _audio_content_type(mp3_bytes) == "audio/mp3"
+
+
+def test_bytes_ogg_gets_ogg_content_type():
+    from vocametrix._http import _audio_content_type
+    ogg_bytes = b"OggS" + b"\x00" * 100
+    assert _audio_content_type(ogg_bytes) == "audio/ogg"
+
+
+def test_bytes_flac_gets_flac_content_type():
+    from vocametrix._http import _audio_content_type
+    flac_bytes = b"fLaC" + b"\x00" * 100
+    assert _audio_content_type(flac_bytes) == "audio/flac"
+
+
+def test_bytes_wav_gets_wav_content_type():
+    from vocametrix._http import _audio_content_type
+    wav_bytes = b"RIFF" + b"\x00" * 100
+    assert _audio_content_type(wav_bytes) == "audio/wav"
+
+
+def test_unknown_bytes_defaults_to_wav():
+    from vocametrix._http import _audio_content_type
+    assert _audio_content_type(b"\x00\x01\x02\x03") == "audio/wav"
+
+
+@respx.mock
+def test_bytes_mp3_upload_uses_mp3_filename_and_content_type():
+    mp3_bytes = b"\xff\xfb" + b"\x00" * 100
+    captured = {}
+
+    def capture(request):
+        body = request.content.decode("latin-1")
+        for line in body.splitlines():
+            if "filename=" in line:
+                captured["filename"] = line
+            if "Content-Type:" in line and "audio" in line:
+                captured["content_type"] = line.split("Content-Type:")[-1].strip()
+        return httpx.Response(200, json={"fileId": "mp3-id"})
+
+    client = httpx.Client(headers={"X-API-Key": "key"})
+    respx.post(f"{BASE}/api/assignFileId").mock(side_effect=capture)
+
+    from vocametrix._http import upload_assign_file_id
+    upload_assign_file_id(client, BASE, mp3_bytes, email="test@example.com")
+
+    assert "audio.mp3" in captured.get("filename", ""), f"Expected audio.mp3 in {captured}"
+    assert captured.get("content_type") == "audio/mp3"
+
+
 def test_sse_stream_uses_header_auth_not_url(monkeypatch):
     """API key must be in X-API-Key header, not ?apiKey= query string."""
     import vocametrix._http as _http

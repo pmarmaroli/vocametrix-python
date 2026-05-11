@@ -19,6 +19,24 @@ import httpx
 
 from .exceptions import VocametrixRateLimitError, VocametrixServerError, raise_for_status
 
+_AUDIO_MAGIC: list[tuple[bytes, str]] = [
+    (b"ID3", "mp3"),
+    (b"\xff\xfb", "mp3"),
+    (b"\xff\xf3", "mp3"),
+    (b"\xff\xf2", "mp3"),
+    (b"OggS", "ogg"),
+    (b"fLaC", "flac"),
+    (b"RIFF", "wav"),
+]
+
+
+def _detect_audio_format(data: bytes) -> str:
+    for magic, fmt in _AUDIO_MAGIC:
+        if data[: len(magic)] == magic:
+            return fmt
+    return "wav"
+
+
 _RETRYABLE = {429, 500, 502, 503, 504}
 _MAX_RETRIES = 3
 _BASE_BACKOFF = 2.0  # seconds
@@ -75,7 +93,7 @@ AudioInput = Union[str, Path, bytes]
 
 def _audio_content_type(audio: AudioInput) -> str:
     if isinstance(audio, bytes):
-        return "audio/wav"
+        return f"audio/{_detect_audio_format(audio)}"
     ct, _ = mimetypes.guess_type(str(audio))
     return ct if ct and ct.startswith("audio/") else "audio/wav"
 
@@ -84,7 +102,8 @@ def _audio_content_type(audio: AudioInput) -> str:
 def _open_audio(audio: AudioInput):  # type: ignore[return]
     """Yield (file_like, filename) without loading the whole file into memory."""
     if isinstance(audio, bytes):
-        yield io.BytesIO(audio), "audio.wav"
+        fmt = _detect_audio_format(audio)
+        yield io.BytesIO(audio), f"audio.{fmt}"
     else:
         path = Path(audio)
         with open(path, "rb") as f:
