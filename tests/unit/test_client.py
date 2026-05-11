@@ -347,3 +347,24 @@ def test_async_proxy_wrapper_preserves_signature():
     proxy = _AsyncNamespaceProxy(sync_ns)
     wrapped = proxy.calculate
     assert wrapped.__name__ == "calculate"
+
+
+def test_transcription_event_terminal_success_is_case_insensitive():
+    from vocametrix import TranscriptionEvent
+    for status in ("Succeeded", "succeeded", "SUCCEEDED", "sUcCeEdEd"):
+        e = TranscriptionEvent(status=status, progress=1.0, display_text=None, raw={})
+        assert e.is_terminal_success, f"Expected is_terminal_success for status={status!r}"
+
+
+def test_transcription_event_terminal_failure_is_case_insensitive():
+    from vocametrix import TranscriptionEvent
+    for status in ("Failed", "failed", "FAILED", "Error", "ERROR"):
+        e = TranscriptionEvent(status=status, progress=0.0, display_text=None, raw={})
+        assert e.is_terminal_failure, f"Expected is_terminal_failure for status={status!r}"
+
+
+def test_transcription_event_pending_is_not_terminal():
+    from vocametrix import TranscriptionEvent
+    e = TranscriptionEvent(status="Running", progress=0.5, display_text=None, raw={})
+    assert not e.is_terminal_success
+    assert not e.is_terminal_failure

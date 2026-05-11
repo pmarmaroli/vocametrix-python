@@ -33,7 +33,7 @@ class TranscriptionEvent:
 
     @property
     def is_terminal_success(self) -> bool:
-        return self.status == "Succeeded"
+        return self.status.lower() == "succeeded"
 
     @property
     def is_terminal_failure(self) -> bool:
