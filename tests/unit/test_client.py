@@ -170,3 +170,39 @@ def test_auth_error_not_retried(tmp_path, client):
         client.dsi.calculate(sustained_vowel=str(wav))
 
     assert call_count == 1  # not retried
+
+
+@respx.mock
+def test_stuttering_raises_on_timeout(tmp_path, client):
+    from vocametrix.exceptions import VocametrixServerError
+
+    wav = tmp_path / "audio.wav"
+    wav.write_bytes(b"RIFF" + b"\x00" * 40)
+
+    respx.post(f"{BASE}/api/assignFileId").mock(
+        return_value=httpx.Response(200, json={"fileId": "f1"})
+    )
+    respx.post(f"{BASE}/api/classify-stuttering").mock(
+        return_value=httpx.Response(200, json={"session_id": "sess-1"})
+    )
+    # Always return "processing" — never completes
+    respx.get(f"{BASE}/api/therapy-status/sess-1").mock(
+        return_value=httpx.Response(200, json={"status": "processing"})
+    )
+
+    # Patch sleep to avoid actual waiting in tests
+    import vocametrix._namespaces as _ns
+    original_sleep = _ns._time.sleep if hasattr(_ns, '_time') else None
+    _ns._time = __import__('time')
+    _ns._time.sleep = lambda s: None
+
+    try:
+        with pytest.raises(VocametrixServerError, match="timed out"):
+            client.stuttering.classify(
+                audio=str(wav),
+                poll_interval=0.01,
+                timeout=0.05,
+            )
+    finally:
+        if original_sleep:
+            _ns._time.sleep = original_sleep

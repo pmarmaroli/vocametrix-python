@@ -225,6 +225,7 @@ class StutteringNamespace:
         timeout: float = 620.0,
     ) -> Dict[str, Any]:
         import time as _time
+        from .exceptions import VocametrixServerError
 
         file_id = upload_assign_file_id(self._c, self._base, audio, email)
         resp = request_with_retry(
@@ -240,12 +241,16 @@ class StutteringNamespace:
             status_r = request_with_retry(
                 self._c, "GET", f"{self._base}/api/therapy-status/{session_id}",
             )
-            state = status_r.json().get("status", status_r.json().get("state", ""))
+            payload = status_r.json()
+            state = payload.get("status", payload.get("state", ""))
             if state in ("completed", "succeeded", "done"):
                 break
             if state in ("failed", "error"):
-                from .exceptions import VocametrixServerError
-                raise VocametrixServerError(f"Stuttering classification failed: {status_r.json()}")
+                raise VocametrixServerError(f"Stuttering classification failed: {payload}")
+        else:
+            raise VocametrixServerError(
+                f"Stuttering classification timed out after {timeout}s (session={session_id})"
+            )
 
         result_r = request_with_retry(
             self._c, "GET", f"{self._base}/api/therapy-result/{session_id}",
