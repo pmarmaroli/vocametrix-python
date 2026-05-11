@@ -10,6 +10,9 @@ Quick start::
     print(result["AVQI"])
 """
 
+from importlib.metadata import PackageNotFoundError as _PackageNotFoundError
+from importlib.metadata import version as _version
+
 from .client import AsyncVocametrixClient, VocametrixClient
 from .exceptions import (
     VocametrixAuthError,
@@ -20,12 +23,17 @@ from .exceptions import (
     VocametrixServerError,
     VocametrixValidationError,
 )
+from ._namespaces import TranscriptionEvent
 
-__version__ = "0.1.0"
+try:
+    __version__ = _version("vocametrix")
+except _PackageNotFoundError:
+    __version__ = "0.0.0"
 
 __all__ = [
     "VocametrixClient",
     "AsyncVocametrixClient",
+    "TranscriptionEvent",
     "VocametrixError",
     "VocametrixAuthError",
     "VocametrixForbiddenError",

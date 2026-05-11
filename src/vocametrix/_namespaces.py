@@ -41,7 +41,7 @@ class TranscriptionEvent:
 
 
 class AvqiNamespace:
-    def __init__(self, client: httpx.Client, base_url: str, default_email: str = "sdk@vocametrix.com") -> None:
+    def __init__(self, client: httpx.Client, base_url: str, default_email: str = "info@vocametrix.com") -> None:
         self._c = client
         self._base = base_url
         self._default_email = default_email
@@ -63,7 +63,7 @@ class AvqiNamespace:
 
 
 class DsiNamespace:
-    def __init__(self, client: httpx.Client, base_url: str, default_email: str = "sdk@vocametrix.com") -> None:
+    def __init__(self, client: httpx.Client, base_url: str, default_email: str = "info@vocametrix.com") -> None:
         self._c = client
         self._base = base_url
         self._default_email = default_email
@@ -76,7 +76,7 @@ class DsiNamespace:
 
 
 class CppNamespace:
-    def __init__(self, client: httpx.Client, base_url: str, default_email: str = "sdk@vocametrix.com") -> None:
+    def __init__(self, client: httpx.Client, base_url: str, default_email: str = "info@vocametrix.com") -> None:
         self._c = client
         self._base = base_url
         self._default_email = default_email
@@ -89,7 +89,7 @@ class CppNamespace:
 
 
 class HnrNamespace:
-    def __init__(self, client: httpx.Client, base_url: str, default_email: str = "sdk@vocametrix.com") -> None:
+    def __init__(self, client: httpx.Client, base_url: str, default_email: str = "info@vocametrix.com") -> None:
         self._c = client
         self._base = base_url
         self._default_email = default_email
@@ -110,7 +110,7 @@ class HnrNamespace:
 
 
 class JitterShimmerNamespace:
-    def __init__(self, client: httpx.Client, base_url: str, default_email: str = "sdk@vocametrix.com") -> None:
+    def __init__(self, client: httpx.Client, base_url: str, default_email: str = "info@vocametrix.com") -> None:
         self._c = client
         self._base = base_url
         self._default_email = default_email
@@ -130,7 +130,7 @@ class VrpNamespace:
     to the same measurement (the pitch/intensity envelope of a speaker's vocal
     range). This namespace is named VRP for clinical clarity.
     """
-    def __init__(self, client: httpx.Client, base_url: str, default_email: str = "sdk@vocametrix.com") -> None:
+    def __init__(self, client: httpx.Client, base_url: str, default_email: str = "info@vocametrix.com") -> None:
         self._c = client
         self._base = base_url
         self._default_email = default_email
@@ -213,7 +213,7 @@ class TtsNamespace:
 
 
 class PhonemeNamespace:
-    def __init__(self, client: httpx.Client, base_url: str, default_email: str = "sdk@vocametrix.com") -> None:
+    def __init__(self, client: httpx.Client, base_url: str, default_email: str = "info@vocametrix.com") -> None:
         self._c = client
         self._base = base_url
         self._default_email = default_email
@@ -234,7 +234,7 @@ class PhonemeNamespace:
 
 
 class StutteringNamespace:
-    def __init__(self, client: httpx.Client, base_url: str, default_email: str = "sdk@vocametrix.com") -> None:
+    def __init__(self, client: httpx.Client, base_url: str, default_email: str = "info@vocametrix.com") -> None:
         self._c = client
         self._base = base_url
         self._default_email = default_email
@@ -293,7 +293,7 @@ class StutteringNamespace:
 
 
 class ProsodyNamespace:
-    def __init__(self, client: httpx.Client, base_url: str, default_email: str = "sdk@vocametrix.com") -> None:
+    def __init__(self, client: httpx.Client, base_url: str, default_email: str = "info@vocametrix.com") -> None:
         self._c = client
         self._base = base_url
         self._default_email = default_email
@@ -315,7 +315,7 @@ class ProsodyNamespace:
 
 
 class EgemapsNamespace:
-    def __init__(self, client: httpx.Client, base_url: str, default_email: str = "sdk@vocametrix.com") -> None:
+    def __init__(self, client: httpx.Client, base_url: str, default_email: str = "info@vocametrix.com") -> None:
         self._c = client
         self._base = base_url
         self._default_email = default_email
@@ -362,7 +362,7 @@ class AdvancedVoiceAnalysisNamespace:
     All use the assignFileId upload pattern.
     """
 
-    def __init__(self, client: httpx.Client, base_url: str, default_email: str = "sdk@vocametrix.com") -> None:
+    def __init__(self, client: httpx.Client, base_url: str, default_email: str = "info@vocametrix.com") -> None:
         self._c = client
         self._base = base_url
         self._default_email = default_email

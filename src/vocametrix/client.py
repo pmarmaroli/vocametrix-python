@@ -5,6 +5,7 @@ AsyncVocametrixClient — async variant using httpx.AsyncClient.
 
 from __future__ import annotations
 
+import functools
 import os
 from typing import Optional
 
@@ -30,6 +31,7 @@ from ._namespaces import (
 
 _DEFAULT_BASE_URL = "https://platform.vocametrix.com"
 _DEFAULT_TIMEOUT = 120.0
+_DEFAULT_EMAIL = "info@vocametrix.com"
 
 
 class VocametrixClient:
@@ -50,7 +52,7 @@ class VocametrixClient:
         api_key: Optional[str] = None,
         base_url: str = _DEFAULT_BASE_URL,
         timeout: float = _DEFAULT_TIMEOUT,
-        email: str = "sdk@vocametrix.com",
+        email: str = _DEFAULT_EMAIL,
     ) -> None:
         key = api_key or os.environ.get("VOCAMETRIX_API_KEY")
         if not key:
@@ -111,6 +113,7 @@ class _AsyncNamespaceProxy:
         if not callable(attr):
             return attr
 
+        @functools.wraps(attr)
         async def wrapper(*args: object, **kwargs: object) -> object:
             return await asyncio.to_thread(attr, *args, **kwargs)
 
@@ -135,7 +138,7 @@ class AsyncVocametrixClient:
         api_key: Optional[str] = None,
         base_url: str = _DEFAULT_BASE_URL,
         timeout: float = _DEFAULT_TIMEOUT,
-        email: str = "sdk@vocametrix.com",
+        email: str = _DEFAULT_EMAIL,
     ) -> None:
         key = api_key or os.environ.get("VOCAMETRIX_API_KEY")
         if not key:

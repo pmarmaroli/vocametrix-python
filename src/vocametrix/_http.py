@@ -95,7 +95,7 @@ def upload_assign_file_id(
     client: httpx.Client,
     base_url: str,
     audio: AudioInput,
-    email: str = "sdk@vocametrix.com",
+    email: str = "info@vocametrix.com",
 ) -> str:
     """
     assignFileId upload pattern — used by all Praat-backed calculators.

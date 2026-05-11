@@ -300,3 +300,50 @@ def test_advanced_voice_h1h2_calculate(tmp_path, client):
 
     result = client.advanced.calculate_h1h2(sustained_vowel=str(wav), gender=1)
     assert result["H1"] == 5.2
+
+
+def test_version_matches_package_metadata():
+    import vocametrix
+    from importlib.metadata import version
+    assert vocametrix.__version__ == version("vocametrix")
+
+
+def test_transcription_event_importable_from_top_level():
+    from vocametrix import TranscriptionEvent
+    e = TranscriptionEvent(status="Succeeded", progress=1.0, display_text="hi", raw={})
+    assert e.status == "Succeeded"
+
+
+@respx.mock
+def test_default_email_is_info_vocametrix(tmp_path):
+    wav = tmp_path / "v.wav"
+    wav.write_bytes(b"RIFF" + b"\x00" * 40)
+    captured = {}
+
+    def capture(request):
+        body = request.content.decode("latin-1")
+        lines = body.splitlines()
+        for i, line in enumerate(lines):
+            if 'name="email"' in line and i + 2 < len(lines):
+                captured["email"] = lines[i + 2].strip()
+        return httpx.Response(200, json={"fileId": "f1"})
+
+    respx.post(f"{BASE}/api/assignFileId").mock(side_effect=capture)
+    respx.get(f"{BASE}/api/calculate-avqi").mock(
+        return_value=httpx.Response(200, json={"AVQI": 1.0})
+    )
+    with VocametrixClient(api_key="key") as c:
+        c.avqi.calculate(sustained_vowel=str(wav))
+
+    assert captured.get("email") == "info@vocametrix.com"
+
+
+def test_async_proxy_wrapper_preserves_signature():
+    import inspect
+    from vocametrix.client import _AsyncNamespaceProxy
+    from vocametrix._namespaces import AvqiNamespace
+    import httpx as _httpx
+    sync_ns = AvqiNamespace(_httpx.Client(), "https://x.com", "info@vocametrix.com")
+    proxy = _AsyncNamespaceProxy(sync_ns)
+    wrapped = proxy.calculate
+    assert wrapped.__name__ == "calculate"
