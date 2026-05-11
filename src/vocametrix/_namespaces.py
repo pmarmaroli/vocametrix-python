@@ -8,7 +8,6 @@ plain Python snake_case dicts; typed Pydantic wrappers are in _models.py.
 
 from __future__ import annotations
 
-import warnings
 from dataclasses import dataclass
 from typing import Any, Dict, Iterator, Optional, Union
 from pathlib import Path
@@ -303,15 +302,12 @@ class SoundLevelNamespace:
         start_sec: float = 0.0,
         end_sec: Optional[float] = None,
     ) -> Dict[str, Any]:
-        # start_sec=0 is treated as falsy by the backend — silently fix it
         if start_sec == 0.0:
-            warnings.warn(
-                "start_sec=0 is treated as falsy by the backend; using 0.001 instead. "
-                "Pass start_sec=0.001 explicitly to suppress this warning.",
-                UserWarning,
-                stacklevel=2,
+            from .exceptions import VocametrixValidationError
+            raise VocametrixValidationError(
+                "start_sec=0 is rejected by the backend (treated as falsy). "
+                "Pass start_sec=0.001 as the minimum offset."
             )
-            start_sec = 0.001
 
         blob_url = upload_blob_url(self._c, self._base, audio)
         body: Dict[str, Any] = {"blobURL": blob_url, "start_sec": start_sec}

@@ -97,27 +97,14 @@ def test_pronunciation_uses_blob_url_pattern(tmp_path, client):
 
 
 @respx.mock
-def test_sound_level_fixes_start_sec_zero(tmp_path, client):
+def test_sound_level_rejects_start_sec_zero(tmp_path, client):
+    from vocametrix.exceptions import VocametrixValidationError
+
     wav = tmp_path / "audio.wav"
     wav.write_bytes(b"RIFF" + b"\x00" * 40)
 
-    respx.post(f"{BASE}/api/get-blob-url").mock(
-        return_value=httpx.Response(200, json={"uploadURL": "https://az.example.com/put", "blobURL": "https://az.example.com/blob"})
-    )
-    respx.put("https://az.example.com/put").mock(return_value=httpx.Response(201))
-
-    captured_body = {}
-
-    def capture(request):
-        captured_body.update(request.content and __import__("json").loads(request.content) or {})
-        return httpx.Response(200, json={"SPL": 72.5})
-
-    respx.post(f"{BASE}/api/soundLevel").mock(side_effect=capture)
-
-    with pytest.warns(UserWarning, match="start_sec=0"):
+    with pytest.raises(VocametrixValidationError, match="start_sec=0"):
         client.sound_level.measure(audio=str(wav), start_sec=0.0)
-
-    assert captured_body.get("start_sec") == 0.001
 
 
 @respx.mock
