@@ -10,8 +10,10 @@ jobs:
   release:
     if: "!startsWith(github.event.head_commit.message, 'chore: bump version')"
     runs-on: ubuntu-latest
+    environment: pypi
     permissions:
-      contents: write   # push version-bump commit + tag back to master
+      contents: write  # push version-bump commit + tag, create GitHub Release
+      id-token: write  # OIDC trusted publishing to PyPI
 
     steps:
       - uses: actions/checkout@v4
@@ -41,7 +43,18 @@ jobs:
           print(f"Bumped to {new_ver}")
           PYEOF
 
-      - name: Commit version bump and push tag
+      - name: Install build tools
+        run: pip install hatchling build
+
+      - name: Build
+        run: python -m build
+
+      - name: Publish to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+
+      - name: Commit version bump, tag, and create GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
@@ -49,3 +62,6 @@ jobs:
           git commit -m "chore: bump version to ${{ steps.version.outputs.version }}"
           git tag "v${{ steps.version.outputs.version }}"
           git push origin master --follow-tags
+          gh release create "v${{ steps.version.outputs.version }}" dist/* \
+            --title "vocametrix ${{ steps.version.outputs.version }}" \
+            --generate-notes
