@@ -23,7 +23,6 @@ from ._namespaces import (
     PronunciationNamespace,
     ProsodyNamespace,
     SoundLevelNamespace,
-    SpeechCoachingNamespace,
     StutteringNamespace,
     TranscriptionNamespace,
     TtsNamespace,
@@ -55,7 +54,8 @@ class VocametrixClient:
         timeout: float = _DEFAULT_TIMEOUT,
         email: str = _DEFAULT_EMAIL,
     ) -> None:
-        key = api_key or os.environ.get("VOCAMETRIX_API_KEY")
+        raw_key = api_key or os.environ.get("VOCAMETRIX_API_KEY")
+        key = raw_key.strip() if raw_key else None
         if not key:
             raise ValueError(
                 "API key required. Pass api_key=... or set VOCAMETRIX_API_KEY env var."
@@ -88,7 +88,6 @@ class VocametrixClient:
         self.sound_level = SoundLevelNamespace(self._http, b)
         self.advanced = AdvancedVoiceAnalysisNamespace(self._http, b, e)
         self.ai_agents = AiAgentsNamespace(self._http, b)
-        self.speech_coaching = SpeechCoachingNamespace(self._http, b)
 
     def close(self) -> None:
         self._http.close()
@@ -117,7 +116,8 @@ class AsyncVocametrixClient:
         timeout: float = _DEFAULT_TIMEOUT,
         email: str = _DEFAULT_EMAIL,
     ) -> None:
-        key = api_key or os.environ.get("VOCAMETRIX_API_KEY")
+        raw_key = api_key or os.environ.get("VOCAMETRIX_API_KEY")
+        key = raw_key.strip() if raw_key else None
         if not key:
             raise ValueError(
                 "API key required. Pass api_key=... or set VOCAMETRIX_API_KEY env var."
@@ -145,7 +145,6 @@ class AsyncVocametrixClient:
             AsyncPronunciationNamespace,
             AsyncProsodyNamespace,
             AsyncSoundLevelNamespace,
-            AsyncSpeechCoachingNamespace,
             AsyncStutteringNamespace,
             AsyncTranscriptionNamespace,
             AsyncTtsNamespace,
@@ -170,7 +169,6 @@ class AsyncVocametrixClient:
         self.sound_level = AsyncSoundLevelNamespace(h, b)
         self.advanced = AsyncAdvancedVoiceAnalysisNamespace(h, b, e)
         self.ai_agents = AsyncAiAgentsNamespace(h, b)
-        self.speech_coaching = AsyncSpeechCoachingNamespace(h, b)
 
     async def close(self) -> None:
         await self._http.aclose()

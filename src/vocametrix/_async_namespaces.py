@@ -377,21 +377,3 @@ class AsyncAiAgentsNamespace:
             body["context"] = context
         resp = await request_with_retry_async(self._c, "POST", f"{self._base}/api/speech-therapist-assistant", json=body)
         return resp.json()
-
-
-class AsyncSpeechCoachingNamespace:
-    def __init__(self, client: httpx.AsyncClient, base_url: str) -> None:
-        self._c = client
-        self._base = base_url
-
-    async def analyze(self, reference_audio_url: str, learner_audio_url: str, locale: str = "en-US") -> Dict[str, Any]:
-        resp = await request_with_retry_async(self._c, "POST", f"{self._base}/api/coaching-analysis", json={"referenceAudioUrl": reference_audio_url, "learnerAudioUrl": learner_audio_url, "locale": locale})
-        return resp.json()
-
-    async def analyze_batch(self, reference_audio_url: str, learner_audio_url: str, locale: str = "en-US") -> Dict[str, Any]:
-        resp = await request_with_retry_async(self._c, "POST", f"{self._base}/api/coaching-analysis-batch", json={"referenceAudioUrl": reference_audio_url, "learnerAudioUrl": learner_audio_url, "locale": locale})
-        return resp.json()
-
-    async def get_batch_result(self, job_id: str) -> Dict[str, Any]:
-        resp = await request_with_retry_async(self._c, "GET", f"{self._base}/api/coaching-analysis-batch/{job_id}")
-        return resp.json()

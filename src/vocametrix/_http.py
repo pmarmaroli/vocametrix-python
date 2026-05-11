@@ -159,16 +159,36 @@ def upload_blob_url(
 
     content_type = _audio_content_type(audio)
     # Use a bare client so the Vocametrix API key is NOT forwarded to Azure Storage.
+    # Retry transient failures (429/5xx) with the same backoff strategy as the main client.
     with _open_audio(audio) as (f, _fname), httpx.Client() as bare_client:
-        put = bare_client.put(
-            upload_url,
-            content=f,
-            headers={"x-ms-blob-type": "BlockBlob", "Content-Type": content_type},
-        )
-    if not put.is_success:
-        raise VocametrixServerError(f"Azure upload failed: {put.status_code} {put.text}")
+        audio_bytes = f.read()
+        for attempt in range(_MAX_RETRIES + 1):
+            try:
+                put = bare_client.put(
+                    upload_url,
+                    content=audio_bytes,
+                    headers={"x-ms-blob-type": "BlockBlob", "Content-Type": content_type},
+                )
+            except httpx.TransportError:
+                if attempt == _MAX_RETRIES:
+                    raise
+                time.sleep(_backoff(attempt))
+                continue
 
-    return blob_url
+            if put.is_success:
+                return blob_url
+
+            transient = put.status_code == 429 or put.status_code >= 500
+            if not transient or attempt == _MAX_RETRIES:
+                req_id = put.headers.get("x-ms-request-id", "n/a")
+                raise VocametrixServerError(
+                    f"Azure upload failed: {put.status_code} (x-ms-request-id={req_id}) {put.text}"
+                )
+            ra = put.headers.get("Retry-After")
+            retry_after = int(ra) if ra and ra.isdigit() else None
+            time.sleep(_backoff(attempt, retry_after))
+
+    raise VocametrixServerError("Azure upload: max retries exceeded")
 
 
 # ── SSE streaming ─────────────────────────────────────────────────────────────
