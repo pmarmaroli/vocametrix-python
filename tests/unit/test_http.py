@@ -92,3 +92,38 @@ def test_upload_uses_mp3_content_type(tmp_path):
     upload_assign_file_id(client, BASE, str(mp3), email="test@example.com")
 
     assert captured_content_type.get("value") == "audio/mpeg"
+
+
+def test_sse_stream_uses_header_auth_not_url(monkeypatch):
+    """API key must be in X-API-Key header, not ?apiKey= query string."""
+    import vocametrix._http as _http
+    import contextlib
+
+    captured_url = {}
+    captured_headers = {}
+
+    def fake_stream(method, url, **kwargs):
+        captured_url["value"] = url
+        captured_headers.update(kwargs.get("headers", {}))
+
+        @contextlib.contextmanager
+        def ctx():
+            class FakeResp:
+                is_success = True
+                status_code = 200
+
+                def iter_text(self):
+                    yield 'data: {"status":"Succeeded"}\n\n'
+
+            yield FakeResp()
+
+        return ctx()
+
+    monkeypatch.setattr(_http.httpx, "stream", fake_stream)
+
+    events = list(_http.sse_stream("https://api.example.com", "txn-123", "my-secret-key"))
+
+    assert "apiKey" not in captured_url["value"]
+    assert captured_headers.get("X-API-Key") == "my-secret-key"
+    assert len(events) == 1
+    assert events[0]["status"] == "Succeeded"

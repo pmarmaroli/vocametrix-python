@@ -153,25 +153,30 @@ def sse_stream(
     """
     Stream SSE events from /api/transcription-progress/:id.
 
-    Auth is via ?apiKey= query string — the X-API-Key header is intentionally
-    NOT used here because the browser EventSource API cannot send custom headers.
+    Auth is via X-API-Key header (not ?apiKey= query string — that was a
+    browser EventSource workaround, but this is server-side httpx).
     """
     import json as _json
 
-    url = f"{base_url}/api/transcription-progress/{transcription_id}?apiKey={api_key}"
-    with httpx.stream("GET", url, timeout=timeout) as resp:
+    url = f"{base_url}/api/transcription-progress/{transcription_id}"
+    with httpx.stream("GET", url, timeout=timeout, headers={"X-API-Key": api_key}) as resp:
         if not resp.is_success:
             raise_for_status(resp.status_code, resp.text)
         buffer = ""
         for chunk in resp.iter_text():
             buffer += chunk
+            # Normalise CRLF before splitting so both \n\n and \r\n\r\n are handled
+            buffer = buffer.replace("\r\n", "\n")
             while "\n\n" in buffer:
                 event_text, buffer = buffer.split("\n\n", 1)
-                data_line = next(
-                    (l[6:] for l in event_text.splitlines() if l.startswith("data:")), None
-                )
-                if data_line:
+                data_lines = [
+                    line[5:].lstrip(" ")
+                    for line in event_text.splitlines()
+                    if line.startswith("data:")
+                ]
+                if data_lines:
+                    raw = "\n".join(data_lines)
                     try:
-                        yield _json.loads(data_line)
+                        yield _json.loads(raw)
                     except _json.JSONDecodeError:
                         pass
