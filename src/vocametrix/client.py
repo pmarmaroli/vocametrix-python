@@ -12,6 +12,7 @@ import httpx
 
 from ._namespaces import (
     AdvancedVoiceAnalysisNamespace,
+    AiAgentsNamespace,
     AvqiNamespace,
     CppNamespace,
     DsiNamespace,
@@ -22,6 +23,7 @@ from ._namespaces import (
     PronunciationNamespace,
     ProsodyNamespace,
     SoundLevelNamespace,
+    SpeechCoachingNamespace,
     StutteringNamespace,
     TranscriptionNamespace,
     TtsNamespace,
@@ -85,6 +87,8 @@ class VocametrixClient:
         self.egemaps = EgemapsNamespace(self._http, b, e)
         self.sound_level = SoundLevelNamespace(self._http, b)
         self.advanced = AdvancedVoiceAnalysisNamespace(self._http, b, e)
+        self.ai_agents = AiAgentsNamespace(self._http, b)
+        self.speech_coaching = SpeechCoachingNamespace(self._http, b)
 
     def close(self) -> None:
         self._http.close()
@@ -130,6 +134,7 @@ class AsyncVocametrixClient:
     def _init_namespaces(self) -> None:
         from ._async_namespaces import (
             AsyncAdvancedVoiceAnalysisNamespace,
+            AsyncAiAgentsNamespace,
             AsyncAvqiNamespace,
             AsyncCppNamespace,
             AsyncDsiNamespace,
@@ -140,6 +145,7 @@ class AsyncVocametrixClient:
             AsyncPronunciationNamespace,
             AsyncProsodyNamespace,
             AsyncSoundLevelNamespace,
+            AsyncSpeechCoachingNamespace,
             AsyncStutteringNamespace,
             AsyncTranscriptionNamespace,
             AsyncTtsNamespace,
@@ -163,6 +169,8 @@ class AsyncVocametrixClient:
         self.egemaps = AsyncEgemapsNamespace(h, b, e)
         self.sound_level = AsyncSoundLevelNamespace(h, b)
         self.advanced = AsyncAdvancedVoiceAnalysisNamespace(h, b, e)
+        self.ai_agents = AsyncAiAgentsNamespace(h, b)
+        self.speech_coaching = AsyncSpeechCoachingNamespace(h, b)
 
     async def close(self) -> None:
         await self._http.aclose()

@@ -329,3 +329,69 @@ class AsyncAdvancedVoiceAnalysisNamespace:
         sv_id = await upload_assign_file_id_async(self._c, self._base, sustained_vowel, effective_email)
         resp = await request_with_retry_async(self._c, "GET", f"{self._base}/api/calculate-voice-dynamics", params={"svFileId": sv_id})
         return resp.json()
+
+
+class AsyncAiAgentsNamespace:
+    def __init__(self, client: httpx.AsyncClient, base_url: str) -> None:
+        self._c = client
+        self._base = base_url
+
+    async def therapy_plan(self, session_metadata: Dict[str, Any], wav2vec_output: Dict[str, Any]) -> Dict[str, Any]:
+        resp = await request_with_retry_async(self._c, "POST", f"{self._base}/api/therapy-planning-agent", json={"sessionMetadata": session_metadata, "wav2vecOutput": wav2vec_output})
+        return resp.json()
+
+    async def speech_exercise(self, patient_profile: Dict[str, Any], difficulty: str = "medium") -> Dict[str, Any]:
+        resp = await request_with_retry_async(self._c, "POST", f"{self._base}/api/speech-exercise-generator", json={"patientProfile": patient_profile, "difficulty": difficulty})
+        return resp.json()
+
+    async def syntax_check(self, text: str, language: str = "en") -> Dict[str, Any]:
+        resp = await request_with_retry_async(self._c, "POST", f"{self._base}/api/syntax-checker-agent", json={"text": text, "language": language})
+        return resp.json()
+
+    async def spell_check(self, text: str, language: str = "en") -> Dict[str, Any]:
+        resp = await request_with_retry_async(self._c, "POST", f"{self._base}/api/spell-agent", json={"text": text, "language": language})
+        return resp.json()
+
+    async def interpret_metrics(self, metrics: Dict[str, Any], praat_results: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+        body: Dict[str, Any] = {"metrics": metrics}
+        if praat_results is not None:
+            body["praatResults"] = praat_results
+        resp = await request_with_retry_async(self._c, "POST", f"{self._base}/api/voice-metrics-interpreter", json=body)
+        return resp.json()
+
+    async def adaptive_exercise(self, patient_id: str, session_history: list) -> Dict[str, Any]:
+        resp = await request_with_retry_async(self._c, "POST", f"{self._base}/api/adaptive-exercise-agent", json={"patientId": patient_id, "sessionHistory": session_history})
+        return resp.json()
+
+    async def french_to_ipa(self, phonetic_input: list) -> Dict[str, Any]:
+        resp = await request_with_retry_async(self._c, "POST", f"{self._base}/api/french-to-ipa-agent", json={"phoneticInput": phonetic_input})
+        return resp.json()
+
+    async def word_list(self, target_phoneme: str, difficulty: str = "medium", locale: str = "en-US") -> Dict[str, Any]:
+        resp = await request_with_retry_async(self._c, "POST", f"{self._base}/api/word-list-generator", json={"targetPhoneme": target_phoneme, "difficulty": difficulty, "locale": locale})
+        return resp.json()
+
+    async def therapist_assistant(self, query: str, context: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+        body: Dict[str, Any] = {"query": query}
+        if context is not None:
+            body["context"] = context
+        resp = await request_with_retry_async(self._c, "POST", f"{self._base}/api/speech-therapist-assistant", json=body)
+        return resp.json()
+
+
+class AsyncSpeechCoachingNamespace:
+    def __init__(self, client: httpx.AsyncClient, base_url: str) -> None:
+        self._c = client
+        self._base = base_url
+
+    async def analyze(self, reference_audio_url: str, learner_audio_url: str, locale: str = "en-US") -> Dict[str, Any]:
+        resp = await request_with_retry_async(self._c, "POST", f"{self._base}/api/coaching-analysis", json={"referenceAudioUrl": reference_audio_url, "learnerAudioUrl": learner_audio_url, "locale": locale})
+        return resp.json()
+
+    async def analyze_batch(self, reference_audio_url: str, learner_audio_url: str, locale: str = "en-US") -> Dict[str, Any]:
+        resp = await request_with_retry_async(self._c, "POST", f"{self._base}/api/coaching-analysis-batch", json={"referenceAudioUrl": reference_audio_url, "learnerAudioUrl": learner_audio_url, "locale": locale})
+        return resp.json()
+
+    async def get_batch_result(self, job_id: str) -> Dict[str, Any]:
+        resp = await request_with_retry_async(self._c, "GET", f"{self._base}/api/coaching-analysis-batch/{job_id}")
+        return resp.json()

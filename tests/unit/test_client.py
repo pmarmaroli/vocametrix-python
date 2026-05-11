@@ -415,3 +415,47 @@ def test_avqi_returns_typed_result(tmp_path):
 
     avqi_val: float = result["AVQI"]
     assert avqi_val == 1.8
+
+
+def test_client_has_ai_agents_namespace():
+    with VocametrixClient(api_key="key") as c:
+        assert hasattr(c, "ai_agents")
+        assert hasattr(c.ai_agents, "therapy_plan")
+        assert hasattr(c.ai_agents, "speech_exercise")
+        assert hasattr(c.ai_agents, "syntax_check")
+        assert hasattr(c.ai_agents, "spell_check")
+        assert hasattr(c.ai_agents, "interpret_metrics")
+
+
+def test_client_has_speech_coaching_namespace():
+    with VocametrixClient(api_key="key") as c:
+        assert hasattr(c, "speech_coaching")
+        assert hasattr(c.speech_coaching, "analyze")
+        assert hasattr(c.speech_coaching, "analyze_batch")
+        assert hasattr(c.speech_coaching, "get_batch_result")
+
+
+@respx.mock
+def test_ai_agents_therapy_plan():
+    respx.post(f"{BASE}/api/therapy-planning-agent").mock(
+        return_value=httpx.Response(200, json={"recommendation": "rest your voice"})
+    )
+    with VocametrixClient(api_key="key") as c:
+        result = c.ai_agents.therapy_plan(
+            session_metadata={"patient_id": "p1", "session_date": "2026-05-11"},
+            wav2vec_output={"features": [0.1, 0.2]},
+        )
+    assert result["recommendation"] == "rest your voice"
+
+
+@respx.mock
+def test_speech_coaching_analyze():
+    respx.post(f"{BASE}/api/coaching-analysis").mock(
+        return_value=httpx.Response(200, json={"score": 87.5})
+    )
+    with VocametrixClient(api_key="key") as c:
+        result = c.speech_coaching.analyze(
+            reference_audio_url="https://cdn.example.com/ref.wav",
+            learner_audio_url="https://cdn.example.com/learner.wav",
+        )
+    assert result["score"] == 87.5
