@@ -149,10 +149,6 @@ class AsyncVocametrixClient:
             headers={"X-API-Key": key},
             timeout=timeout,
         )
-        self._async_http = httpx.AsyncClient(
-            headers={"X-API-Key": key},
-            timeout=timeout,
-        )
         self._init_namespaces()
 
     def _init_namespaces(self) -> None:
@@ -176,7 +172,6 @@ class AsyncVocametrixClient:
 
     async def close(self) -> None:
         self._sync_http.close()
-        await self._async_http.aclose()
 
     async def __aenter__(self) -> "AsyncVocametrixClient":
         return self

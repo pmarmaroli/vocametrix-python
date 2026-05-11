@@ -10,8 +10,10 @@ jobs:
   release:
     if: "!startsWith(github.event.head_commit.message, 'chore: bump version')"
     runs-on: ubuntu-latest
+    environment: pypi
     permissions:
       contents: write   # push version-bump commit + tag back to master
+      id-token: write   # OIDC trusted publishing to PyPI
 
     steps:
       - uses: actions/checkout@v4
@@ -40,6 +42,15 @@ jobs:
               f.write(f"version={new_ver}\n")
           print(f"Bumped to {new_ver}")
           PYEOF
+
+      - name: Install build tools
+        run: pip install hatchling build
+
+      - name: Build
+        run: python -m build
+
+      - name: Publish to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
 
       - name: Commit version bump and push tag
         run: |
