@@ -18,3 +18,4 @@ env/
 .coverage
 htmlcov/
 .hatch/
+non-tracked-docs/
