@@ -61,7 +61,8 @@ jobs:
           git add pyproject.toml
           git commit -m "chore: bump version to ${{ steps.version.outputs.version }}"
           git tag "v${{ steps.version.outputs.version }}"
-          git push origin master --follow-tags
+          git push origin master
+          git push origin "v${{ steps.version.outputs.version }}"
           gh release create "v${{ steps.version.outputs.version }}" dist/* \
             --title "vocametrix ${{ steps.version.outputs.version }}" \
             --generate-notes
