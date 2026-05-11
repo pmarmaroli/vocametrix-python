@@ -284,3 +284,19 @@ async def test_async_client_has_all_namespaces():
                      "pronunciation", "transcription", "tts", "phoneme",
                      "stuttering", "prosody", "egemaps", "sound_level"]:
             assert hasattr(client, attr), f"Missing namespace: {attr}"
+
+
+@respx.mock
+def test_advanced_voice_h1h2_calculate(tmp_path, client):
+    wav = tmp_path / "sv.wav"
+    wav.write_bytes(b"RIFF" + b"\x00" * 40)
+
+    respx.post(f"{BASE}/api/assignFileId").mock(
+        return_value=httpx.Response(200, json={"fileId": "f-h1h2"})
+    )
+    respx.get(f"{BASE}/api/calculate-h1-h2").mock(
+        return_value=httpx.Response(200, json={"H1": 5.2, "H2": 3.1})
+    )
+
+    result = client.advanced.calculate_h1h2(sustained_vowel=str(wav), gender=1)
+    assert result["H1"] == 5.2

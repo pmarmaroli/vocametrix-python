@@ -11,6 +11,7 @@ from typing import Optional
 import httpx
 
 from ._namespaces import (
+    AdvancedVoiceAnalysisNamespace,
     AvqiNamespace,
     CppNamespace,
     DsiNamespace,
@@ -82,6 +83,7 @@ class VocametrixClient:
         self.prosody = ProsodyNamespace(self._http, b, e)
         self.egemaps = EgemapsNamespace(self._http, b, e)
         self.sound_level = SoundLevelNamespace(self._http, b)
+        self.advanced = AdvancedVoiceAnalysisNamespace(self._http, b, e)
 
     def close(self) -> None:
         self._http.close()
@@ -164,6 +166,7 @@ class AsyncVocametrixClient:
         self.prosody = _AsyncNamespaceProxy(ProsodyNamespace(self._sync_http, b, e))
         self.egemaps = _AsyncNamespaceProxy(EgemapsNamespace(self._sync_http, b, e))
         self.sound_level = _AsyncNamespaceProxy(SoundLevelNamespace(self._sync_http, b))
+        self.advanced = _AsyncNamespaceProxy(AdvancedVoiceAnalysisNamespace(self._sync_http, b, e))
 
     async def close(self) -> None:
         self._sync_http.close()
