@@ -93,14 +93,33 @@ class VocametrixClient:
         self.close()
 
 
+class _AsyncNamespaceProxy:
+    """Wraps a sync namespace so every method becomes an awaitable via asyncio.to_thread."""
+
+    def __init__(self, sync_ns: object) -> None:
+        self._sync = sync_ns
+
+    def __getattr__(self, name: str):  # type: ignore[return]
+        import asyncio
+        method = getattr(self._sync, name)
+
+        async def wrapper(*args: object, **kwargs: object) -> object:
+            return await asyncio.to_thread(method, *args, **kwargs)
+
+        return wrapper
+
+
 class AsyncVocametrixClient:
     """
-    Async Vocametrix API client (httpx.AsyncClient).
+    Async Vocametrix API client.
 
     Usage::
 
         async with AsyncVocametrixClient(api_key="...") as client:
             result = await client.avqi.calculate(sustained_vowel="vowel.wav")
+
+    Every namespace method is a coroutine that runs the underlying sync call
+    in a thread pool via asyncio.to_thread, keeping the event loop unblocked.
     """
 
     def __init__(
@@ -108,6 +127,7 @@ class AsyncVocametrixClient:
         api_key: Optional[str] = None,
         base_url: str = _DEFAULT_BASE_URL,
         timeout: float = _DEFAULT_TIMEOUT,
+        email: str = "sdk@vocametrix.com",
     ) -> None:
         key = api_key or os.environ.get("VOCAMETRIX_API_KEY")
         if not key:
@@ -115,31 +135,42 @@ class AsyncVocametrixClient:
                 "API key required. Pass api_key=... or set VOCAMETRIX_API_KEY env var."
             )
         self._api_key = key
+        self._email = email
         self._base_url = base_url.rstrip("/")
-        self._http = httpx.AsyncClient(
+        self._sync_http = httpx.Client(
             headers={"X-API-Key": key},
             timeout=timeout,
         )
+        self._async_http = httpx.AsyncClient(
+            headers={"X-API-Key": key},
+            timeout=timeout,
+        )
+        self._init_namespaces()
+
+    def _init_namespaces(self) -> None:
+        b = self._base_url
+        e = self._email
+        self.avqi = _AsyncNamespaceProxy(AvqiNamespace(self._sync_http, b, e))
+        self.dsi = _AsyncNamespaceProxy(DsiNamespace(self._sync_http, b, e))
+        self.cpp = _AsyncNamespaceProxy(CppNamespace(self._sync_http, b, e))
+        self.hnr = _AsyncNamespaceProxy(HnrNamespace(self._sync_http, b, e))
+        self.jitter_shimmer = _AsyncNamespaceProxy(JitterShimmerNamespace(self._sync_http, b, e))
+        self.vrp = _AsyncNamespaceProxy(VrpNamespace(self._sync_http, b, e))
+        self.pronunciation = _AsyncNamespaceProxy(PronunciationNamespace(self._sync_http, b))
+        self.transcription = _AsyncNamespaceProxy(TranscriptionNamespace(self._sync_http, b, self._api_key))
+        self.tts = _AsyncNamespaceProxy(TtsNamespace(self._sync_http, b))
+        self.phoneme = _AsyncNamespaceProxy(PhonemeNamespace(self._sync_http, b, e))
+        self.stuttering = _AsyncNamespaceProxy(StutteringNamespace(self._sync_http, b, e))
+        self.prosody = _AsyncNamespaceProxy(ProsodyNamespace(self._sync_http, b, e))
+        self.egemaps = _AsyncNamespaceProxy(EgemapsNamespace(self._sync_http, b, e))
+        self.sound_level = _AsyncNamespaceProxy(SoundLevelNamespace(self._sync_http, b))
 
     async def close(self) -> None:
-        await self._http.aclose()
+        self._sync_http.close()
+        await self._async_http.aclose()
 
     async def __aenter__(self) -> "AsyncVocametrixClient":
         return self
 
     async def __aexit__(self, *args: object) -> None:
         await self.close()
-
-    # Async namespace methods delegate to the sync helpers via run_in_executor
-    # for simplicity — a production SDK would use async httpx calls throughout.
-    # The key value here is the identical public API surface.
-
-    async def _aget(self, url: str, **kwargs: object) -> dict:  # type: ignore[return]
-        resp = await self._http.get(url, **kwargs)  # type: ignore[arg-type]
-        resp.raise_for_status()
-        return resp.json()
-
-    async def _apost(self, url: str, **kwargs: object) -> dict:  # type: ignore[return]
-        resp = await self._http.post(url, **kwargs)  # type: ignore[arg-type]
-        resp.raise_for_status()
-        return resp.json()

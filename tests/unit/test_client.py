@@ -6,6 +6,7 @@ import respx
 import httpx
 
 from vocametrix import VocametrixClient, VocametrixAuthError, VocametrixRateLimitError
+from vocametrix import AsyncVocametrixClient
 from vocametrix._http import AudioInput
 
 BASE = "https://platform.vocametrix.com"
@@ -248,3 +249,38 @@ def test_per_call_email_overrides_client_default(tmp_path):
     client.close()
 
     assert captured_email.get("value") == "override@example.com"
+
+
+@pytest.mark.asyncio
+@respx.mock
+async def test_async_client_avqi_calculate(tmp_path):
+    wav = tmp_path / "vowel.wav"
+    wav.write_bytes(b"RIFF" + b"\x00" * 40)
+
+    respx.post(f"{BASE}/api/assignFileId").mock(
+        return_value=httpx.Response(200, json={"fileId": "async-f1"})
+    )
+    respx.get(f"{BASE}/api/calculate-avqi").mock(
+        return_value=httpx.Response(200, json={"AVQI": 3.5})
+    )
+
+    async with AsyncVocametrixClient(api_key="test-key") as client:
+        result = await client.avqi.calculate(sustained_vowel=str(wav))
+
+    assert result["AVQI"] == 3.5
+
+
+@pytest.mark.asyncio
+async def test_async_client_requires_api_key(monkeypatch):
+    monkeypatch.delenv("VOCAMETRIX_API_KEY", raising=False)
+    with pytest.raises(ValueError, match="API key required"):
+        AsyncVocametrixClient()
+
+
+@pytest.mark.asyncio
+async def test_async_client_has_all_namespaces():
+    async with AsyncVocametrixClient(api_key="key") as client:
+        for attr in ["avqi", "dsi", "cpp", "hnr", "jitter_shimmer", "vrp",
+                     "pronunciation", "transcription", "tts", "phoneme",
+                     "stuttering", "prosody", "egemaps", "sound_level"]:
+            assert hasattr(client, attr), f"Missing namespace: {attr}"
