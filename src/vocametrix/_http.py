@@ -121,12 +121,17 @@ def upload_assign_file_id(
     client: httpx.Client,
     base_url: str,
     audio: AudioInput,
-    email: str = "info@vocametrix.com",
+    email: Optional[str] = None,  # deprecated, ignored — kept for back-compat
 ) -> str:
     """
     assignFileId upload pattern — used by all Praat-backed calculators.
     Returns the fileId string.
+
+    The `email` parameter is deprecated and ignored. The backend now keys
+    usage-tracking opt-out on the API key (server-controlled list), so the
+    SDK no longer sends this field.
     """
+    del email  # explicitly unused
     content_type = _audio_content_type(audio)
     with _open_audio(audio) as (f, fname):
         resp = request_with_retry(
@@ -134,7 +139,6 @@ def upload_assign_file_id(
             "POST",
             f"{base_url}/api/assignFileId",
             files={"audio": (fname, f, content_type)},
-            data={"email": email},
         )
     return resp.json()["fileId"]
 
