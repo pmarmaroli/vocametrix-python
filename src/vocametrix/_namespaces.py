@@ -40,59 +40,67 @@ class TranscriptionEvent:
 
 
 class AvqiNamespace:
-    def __init__(self, client: httpx.Client, base_url: str) -> None:
+    def __init__(self, client: httpx.Client, base_url: str, default_email: str = "sdk@vocametrix.com") -> None:
         self._c = client
         self._base = base_url
+        self._default_email = default_email
 
     def calculate(
         self,
         sustained_vowel: AudioInput,
         connected_speech: Optional[AudioInput] = None,
-        email: str = "sdk@vocametrix.com",
+        email: Optional[str] = None,
     ) -> Dict[str, Any]:
-        sv_id = upload_assign_file_id(self._c, self._base, sustained_vowel, email)
+        effective_email = email if email is not None else self._default_email
+        sv_id = upload_assign_file_id(self._c, self._base, sustained_vowel, effective_email)
         params: Dict[str, str] = {"svFileId": sv_id}
         if connected_speech is not None:
-            cs_id = upload_assign_file_id(self._c, self._base, connected_speech, email)
+            cs_id = upload_assign_file_id(self._c, self._base, connected_speech, effective_email)
             params["csFileId"] = cs_id
         resp = request_with_retry(self._c, "GET", f"{self._base}/api/calculate-avqi", params=params)
         return resp.json()
 
 
 class DsiNamespace:
-    def __init__(self, client: httpx.Client, base_url: str) -> None:
+    def __init__(self, client: httpx.Client, base_url: str, default_email: str = "sdk@vocametrix.com") -> None:
         self._c = client
         self._base = base_url
+        self._default_email = default_email
 
-    def calculate(self, sustained_vowel: AudioInput, email: str = "sdk@vocametrix.com") -> Dict[str, Any]:
-        sv_id = upload_assign_file_id(self._c, self._base, sustained_vowel, email)
+    def calculate(self, sustained_vowel: AudioInput, email: Optional[str] = None) -> Dict[str, Any]:
+        effective_email = email if email is not None else self._default_email
+        sv_id = upload_assign_file_id(self._c, self._base, sustained_vowel, effective_email)
         resp = request_with_retry(self._c, "GET", f"{self._base}/api/calculate-dsi", params={"svFileId": sv_id})
         return resp.json()
 
 
 class CppNamespace:
-    def __init__(self, client: httpx.Client, base_url: str) -> None:
+    def __init__(self, client: httpx.Client, base_url: str, default_email: str = "sdk@vocametrix.com") -> None:
         self._c = client
         self._base = base_url
+        self._default_email = default_email
 
-    def calculate(self, sustained_vowel: AudioInput, email: str = "sdk@vocametrix.com") -> Dict[str, Any]:
-        sv_id = upload_assign_file_id(self._c, self._base, sustained_vowel, email)
+    def calculate(self, sustained_vowel: AudioInput, email: Optional[str] = None) -> Dict[str, Any]:
+        effective_email = email if email is not None else self._default_email
+        sv_id = upload_assign_file_id(self._c, self._base, sustained_vowel, effective_email)
         resp = request_with_retry(self._c, "GET", f"{self._base}/api/calculate-cpp", params={"svFileId": sv_id})
         return resp.json()
 
 
 class HnrNamespace:
-    def __init__(self, client: httpx.Client, base_url: str) -> None:
+    def __init__(self, client: httpx.Client, base_url: str, default_email: str = "sdk@vocametrix.com") -> None:
         self._c = client
         self._base = base_url
+        self._default_email = default_email
 
     def calculate(
         self,
         sustained_vowel: AudioInput,
         gender: int = 1,
-        email: str = "sdk@vocametrix.com",
+        email: Optional[str] = None,
     ) -> Dict[str, Any]:
-        sv_id = upload_assign_file_id(self._c, self._base, sustained_vowel, email)
+        effective_email = email if email is not None else self._default_email
+        sv_id = upload_assign_file_id(self._c, self._base, sustained_vowel, effective_email)
         resp = request_with_retry(
             self._c, "GET", f"{self._base}/api/calculate-hnr-multiband",
             params={"svFileId": sv_id, "gender": gender},
@@ -101,29 +109,33 @@ class HnrNamespace:
 
 
 class JitterShimmerNamespace:
-    def __init__(self, client: httpx.Client, base_url: str) -> None:
+    def __init__(self, client: httpx.Client, base_url: str, default_email: str = "sdk@vocametrix.com") -> None:
         self._c = client
         self._base = base_url
+        self._default_email = default_email
 
-    def calculate(self, sustained_vowel: AudioInput, email: str = "sdk@vocametrix.com") -> Dict[str, Any]:
-        sv_id = upload_assign_file_id(self._c, self._base, sustained_vowel, email)
+    def calculate(self, sustained_vowel: AudioInput, email: Optional[str] = None) -> Dict[str, Any]:
+        effective_email = email if email is not None else self._default_email
+        sv_id = upload_assign_file_id(self._c, self._base, sustained_vowel, effective_email)
         resp = request_with_retry(self._c, "GET", f"{self._base}/api/jitter-shimmer", params={"svFileId": sv_id})
         return resp.json()
 
 
 class VrpNamespace:
-    def __init__(self, client: httpx.Client, base_url: str) -> None:
+    def __init__(self, client: httpx.Client, base_url: str, default_email: str = "sdk@vocametrix.com") -> None:
         self._c = client
         self._base = base_url
+        self._default_email = default_email
 
     def calculate(
         self,
         sustained_vowel: AudioInput,
         age: int = 30,
         gender: int = 1,
-        email: str = "sdk@vocametrix.com",
+        email: Optional[str] = None,
     ) -> Dict[str, Any]:
-        sv_id = upload_assign_file_id(self._c, self._base, sustained_vowel, email)
+        effective_email = email if email is not None else self._default_email
+        sv_id = upload_assign_file_id(self._c, self._base, sustained_vowel, effective_email)
         resp = request_with_retry(
             self._c, "GET", f"{self._base}/api/calculate-ambitus",
             params={"svFileId": sv_id, "age": age, "gender": gender},
@@ -193,17 +205,19 @@ class TtsNamespace:
 
 
 class PhonemeNamespace:
-    def __init__(self, client: httpx.Client, base_url: str) -> None:
+    def __init__(self, client: httpx.Client, base_url: str, default_email: str = "sdk@vocametrix.com") -> None:
         self._c = client
         self._base = base_url
+        self._default_email = default_email
 
     def detect(
         self,
         audio: AudioInput,
         language: str = "fr",
-        email: str = "sdk@vocametrix.com",
+        email: Optional[str] = None,
     ) -> Dict[str, Any]:
-        file_id = upload_assign_file_id(self._c, self._base, audio, email)
+        effective_email = email if email is not None else self._default_email
+        file_id = upload_assign_file_id(self._c, self._base, audio, effective_email)
         resp = request_with_retry(
             self._c, "POST", f"{self._base}/api/classify-phoneme",
             json={"fileId": file_id, "language": language},
@@ -212,21 +226,23 @@ class PhonemeNamespace:
 
 
 class StutteringNamespace:
-    def __init__(self, client: httpx.Client, base_url: str) -> None:
+    def __init__(self, client: httpx.Client, base_url: str, default_email: str = "sdk@vocametrix.com") -> None:
         self._c = client
         self._base = base_url
+        self._default_email = default_email
 
     def classify(
         self,
         audio: AudioInput,
-        email: str = "sdk@vocametrix.com",
+        email: Optional[str] = None,
         poll_interval: float = 5.0,
         timeout: float = 620.0,
     ) -> Dict[str, Any]:
         import time as _time
         from .exceptions import VocametrixServerError
 
-        file_id = upload_assign_file_id(self._c, self._base, audio, email)
+        effective_email = email if email is not None else self._default_email
+        file_id = upload_assign_file_id(self._c, self._base, audio, effective_email)
         resp = request_with_retry(
             self._c, "POST", f"{self._base}/api/classify-stuttering",
             json={"fileId": file_id},
@@ -258,18 +274,20 @@ class StutteringNamespace:
 
 
 class ProsodyNamespace:
-    def __init__(self, client: httpx.Client, base_url: str) -> None:
+    def __init__(self, client: httpx.Client, base_url: str, default_email: str = "sdk@vocametrix.com") -> None:
         self._c = client
         self._base = base_url
+        self._default_email = default_email
 
     def similarity(
         self,
         model: AudioInput,
         learner: AudioInput,
-        email: str = "sdk@vocametrix.com",
+        email: Optional[str] = None,
     ) -> Dict[str, Any]:
-        sv_id = upload_assign_file_id(self._c, self._base, model, email)
-        cs_id = upload_assign_file_id(self._c, self._base, learner, email)
+        effective_email = email if email is not None else self._default_email
+        sv_id = upload_assign_file_id(self._c, self._base, model, effective_email)
+        cs_id = upload_assign_file_id(self._c, self._base, learner, effective_email)
         resp = request_with_retry(
             self._c, "GET", f"{self._base}/api/calculate-prosody-similarity",
             params={"svFileId": sv_id, "csFileId": cs_id},
@@ -278,12 +296,14 @@ class ProsodyNamespace:
 
 
 class EgemapsNamespace:
-    def __init__(self, client: httpx.Client, base_url: str) -> None:
+    def __init__(self, client: httpx.Client, base_url: str, default_email: str = "sdk@vocametrix.com") -> None:
         self._c = client
         self._base = base_url
+        self._default_email = default_email
 
-    def extract(self, audio: AudioInput, email: str = "sdk@vocametrix.com") -> Dict[str, Any]:
-        file_id = upload_assign_file_id(self._c, self._base, audio, email)
+    def extract(self, audio: AudioInput, email: Optional[str] = None) -> Dict[str, Any]:
+        effective_email = email if email is not None else self._default_email
+        file_id = upload_assign_file_id(self._c, self._base, audio, effective_email)
         resp = request_with_retry(
             self._c, "GET", f"{self._base}/api/gemaps-extract",
             params={"svFileId": file_id},

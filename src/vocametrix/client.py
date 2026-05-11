@@ -49,6 +49,7 @@ class VocametrixClient:
         api_key: Optional[str] = None,
         base_url: str = _DEFAULT_BASE_URL,
         timeout: float = _DEFAULT_TIMEOUT,
+        email: str = "sdk@vocametrix.com",
     ) -> None:
         key = api_key or os.environ.get("VOCAMETRIX_API_KEY")
         if not key:
@@ -57,6 +58,7 @@ class VocametrixClient:
             )
         self._api_key = key
         self._base_url = base_url.rstrip("/")
+        self._email = email
         self._http = httpx.Client(
             headers={"X-API-Key": key},
             timeout=timeout,
@@ -65,19 +67,20 @@ class VocametrixClient:
 
     def _init_namespaces(self) -> None:
         b = self._base_url
-        self.avqi = AvqiNamespace(self._http, b)
-        self.dsi = DsiNamespace(self._http, b)
-        self.cpp = CppNamespace(self._http, b)
-        self.hnr = HnrNamespace(self._http, b)
-        self.jitter_shimmer = JitterShimmerNamespace(self._http, b)
-        self.vrp = VrpNamespace(self._http, b)
+        e = self._email
+        self.avqi = AvqiNamespace(self._http, b, e)
+        self.dsi = DsiNamespace(self._http, b, e)
+        self.cpp = CppNamespace(self._http, b, e)
+        self.hnr = HnrNamespace(self._http, b, e)
+        self.jitter_shimmer = JitterShimmerNamespace(self._http, b, e)
+        self.vrp = VrpNamespace(self._http, b, e)
         self.pronunciation = PronunciationNamespace(self._http, b)
         self.transcription = TranscriptionNamespace(self._http, b, self._api_key)
         self.tts = TtsNamespace(self._http, b)
-        self.phoneme = PhonemeNamespace(self._http, b)
-        self.stuttering = StutteringNamespace(self._http, b)
-        self.prosody = ProsodyNamespace(self._http, b)
-        self.egemaps = EgemapsNamespace(self._http, b)
+        self.phoneme = PhonemeNamespace(self._http, b, e)
+        self.stuttering = StutteringNamespace(self._http, b, e)
+        self.prosody = ProsodyNamespace(self._http, b, e)
+        self.egemaps = EgemapsNamespace(self._http, b, e)
         self.sound_level = SoundLevelNamespace(self._http, b)
 
     def close(self) -> None:

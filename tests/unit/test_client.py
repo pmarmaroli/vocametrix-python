@@ -193,3 +193,58 @@ def test_stuttering_raises_on_timeout(tmp_path, client):
     finally:
         if original_sleep:
             _ns._time.sleep = original_sleep
+
+
+@respx.mock
+def test_client_email_used_as_namespace_default(tmp_path):
+    """email set at client level should appear in upload requests."""
+    client = VocametrixClient(api_key="key", email="user@example.com")
+    wav = tmp_path / "vowel.wav"
+    wav.write_bytes(b"RIFF" + b"\x00" * 40)
+
+    captured_email = {}
+
+    def capture_assign(request):
+        body = request.content.decode("latin-1")
+        lines = body.splitlines()
+        for i, line in enumerate(lines):
+            if 'name="email"' in line and i + 2 < len(lines):
+                captured_email["value"] = lines[i + 2].strip()
+        return httpx.Response(200, json={"fileId": "f1"})
+
+    respx.post(f"{BASE}/api/assignFileId").mock(side_effect=capture_assign)
+    respx.get(f"{BASE}/api/calculate-avqi").mock(
+        return_value=httpx.Response(200, json={"AVQI": 1.5})
+    )
+
+    client.avqi.calculate(sustained_vowel=str(wav))
+    client.close()
+
+    assert captured_email.get("value") == "user@example.com"
+
+
+@respx.mock
+def test_per_call_email_overrides_client_default(tmp_path):
+    client = VocametrixClient(api_key="key", email="client@example.com")
+    wav = tmp_path / "vowel.wav"
+    wav.write_bytes(b"RIFF" + b"\x00" * 40)
+
+    captured_email = {}
+
+    def capture_assign(request):
+        body = request.content.decode("latin-1")
+        lines = body.splitlines()
+        for i, line in enumerate(lines):
+            if 'name="email"' in line and i + 2 < len(lines):
+                captured_email["value"] = lines[i + 2].strip()
+        return httpx.Response(200, json={"fileId": "f1"})
+
+    respx.post(f"{BASE}/api/assignFileId").mock(side_effect=capture_assign)
+    respx.get(f"{BASE}/api/calculate-dsi").mock(
+        return_value=httpx.Response(200, json={"DSI": 2.0})
+    )
+
+    client.dsi.calculate(sustained_vowel=str(wav), email="override@example.com")
+    client.close()
+
+    assert captured_email.get("value") == "override@example.com"
