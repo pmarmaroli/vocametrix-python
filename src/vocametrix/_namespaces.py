@@ -22,6 +22,27 @@ from ._http import (
     upload_blob_url,
     sse_stream,
 )
+from ._response_types import (
+    AbiResult,
+    AvqiResult,
+    CppResult,
+    DsiResult,
+    EgemapsResult,
+    FormantStatisticsResult,
+    GneResult,
+    H1H2Result,
+    HnrResult,
+    JitterShimmerResult,
+    PhonemeResult,
+    PronunciationResult,
+    ProsodySimilarityResult,
+    SoundLevelResult,
+    SpectralResult,
+    SzRatioResult,
+    TtsResult,
+    VoiceDynamicsResult,
+    VrpResult,
+)
 
 
 @dataclass
@@ -51,7 +72,7 @@ class AvqiNamespace:
         sustained_vowel: AudioInput,
         connected_speech: Optional[AudioInput] = None,
         email: Optional[str] = None,
-    ) -> Dict[str, Any]:
+    ) -> AvqiResult:
         effective_email = email if email is not None else self._default_email
         sv_id = upload_assign_file_id(self._c, self._base, sustained_vowel, effective_email)
         params: Dict[str, str] = {"svFileId": sv_id}
@@ -68,7 +89,7 @@ class DsiNamespace:
         self._base = base_url
         self._default_email = default_email
 
-    def calculate(self, sustained_vowel: AudioInput, email: Optional[str] = None) -> Dict[str, Any]:
+    def calculate(self, sustained_vowel: AudioInput, email: Optional[str] = None) -> DsiResult:
         effective_email = email if email is not None else self._default_email
         sv_id = upload_assign_file_id(self._c, self._base, sustained_vowel, effective_email)
         resp = request_with_retry(self._c, "GET", f"{self._base}/api/calculate-dsi", params={"svFileId": sv_id})
@@ -81,7 +102,7 @@ class CppNamespace:
         self._base = base_url
         self._default_email = default_email
 
-    def calculate(self, sustained_vowel: AudioInput, email: Optional[str] = None) -> Dict[str, Any]:
+    def calculate(self, sustained_vowel: AudioInput, email: Optional[str] = None) -> CppResult:
         effective_email = email if email is not None else self._default_email
         sv_id = upload_assign_file_id(self._c, self._base, sustained_vowel, effective_email)
         resp = request_with_retry(self._c, "GET", f"{self._base}/api/calculate-cpp", params={"svFileId": sv_id})
@@ -99,7 +120,7 @@ class HnrNamespace:
         sustained_vowel: AudioInput,
         gender: int = 1,
         email: Optional[str] = None,
-    ) -> Dict[str, Any]:
+    ) -> HnrResult:
         effective_email = email if email is not None else self._default_email
         sv_id = upload_assign_file_id(self._c, self._base, sustained_vowel, effective_email)
         resp = request_with_retry(
@@ -115,7 +136,7 @@ class JitterShimmerNamespace:
         self._base = base_url
         self._default_email = default_email
 
-    def calculate(self, sustained_vowel: AudioInput, email: Optional[str] = None) -> Dict[str, Any]:
+    def calculate(self, sustained_vowel: AudioInput, email: Optional[str] = None) -> JitterShimmerResult:
         effective_email = email if email is not None else self._default_email
         sv_id = upload_assign_file_id(self._c, self._base, sustained_vowel, effective_email)
         resp = request_with_retry(self._c, "GET", f"{self._base}/api/jitter-shimmer", params={"svFileId": sv_id})
@@ -141,7 +162,7 @@ class VrpNamespace:
         age: int = 30,
         gender: int = 1,
         email: Optional[str] = None,
-    ) -> Dict[str, Any]:
+    ) -> VrpResult:
         effective_email = email if email is not None else self._default_email
         sv_id = upload_assign_file_id(self._c, self._base, sustained_vowel, effective_email)
         resp = request_with_retry(
@@ -161,7 +182,7 @@ class PronunciationNamespace:
         audio: AudioInput,
         reference_text: str,
         locale: str = "en-US",
-    ) -> Dict[str, Any]:
+    ) -> PronunciationResult:
         blob_url = upload_blob_url(self._c, self._base, audio)
         resp = request_with_retry(
             self._c, "POST", f"{self._base}/api/pronunciation-assessment",
@@ -204,7 +225,7 @@ class TtsNamespace:
         text: str,
         locale: str = "en-US",
         voice_name: Optional[str] = None,
-    ) -> Dict[str, Any]:
+    ) -> TtsResult:
         body: Dict[str, Any] = {"text": text, "locale": locale}
         if voice_name:
             body["voiceName"] = voice_name
@@ -223,7 +244,7 @@ class PhonemeNamespace:
         audio: AudioInput,
         language: str = "fr",
         email: Optional[str] = None,
-    ) -> Dict[str, Any]:
+    ) -> PhonemeResult:
         effective_email = email if email is not None else self._default_email
         file_id = upload_assign_file_id(self._c, self._base, audio, effective_email)
         resp = request_with_retry(
@@ -303,7 +324,7 @@ class ProsodyNamespace:
         model: AudioInput,
         learner: AudioInput,
         email: Optional[str] = None,
-    ) -> Dict[str, Any]:
+    ) -> ProsodySimilarityResult:
         effective_email = email if email is not None else self._default_email
         sv_id = upload_assign_file_id(self._c, self._base, model, effective_email)
         cs_id = upload_assign_file_id(self._c, self._base, learner, effective_email)
@@ -320,7 +341,7 @@ class EgemapsNamespace:
         self._base = base_url
         self._default_email = default_email
 
-    def extract(self, audio: AudioInput, email: Optional[str] = None) -> Dict[str, Any]:
+    def extract(self, audio: AudioInput, email: Optional[str] = None) -> EgemapsResult:
         effective_email = email if email is not None else self._default_email
         file_id = upload_assign_file_id(self._c, self._base, audio, effective_email)
         resp = request_with_retry(
@@ -340,7 +361,7 @@ class SoundLevelNamespace:
         audio: AudioInput,
         start_sec: float = 0.0,
         end_sec: Optional[float] = None,
-    ) -> Dict[str, Any]:
+    ) -> SoundLevelResult:
         if start_sec == 0.0:
             from .exceptions import VocametrixValidationError
             raise VocametrixValidationError(
@@ -372,7 +393,7 @@ class AdvancedVoiceAnalysisNamespace:
         sustained_vowel: AudioInput,
         gender: int = 1,
         email: Optional[str] = None,
-    ) -> Dict[str, Any]:
+    ) -> H1H2Result:
         """H1*-H2*: formant-corrected harmonic difference, a measure of vocal fold adduction."""
         effective_email = email if email is not None else self._default_email
         sv_id = upload_assign_file_id(self._c, self._base, sustained_vowel, effective_email)
@@ -387,7 +408,7 @@ class AdvancedVoiceAnalysisNamespace:
         sustained_vowel: AudioInput,
         gender: int = 1,
         email: Optional[str] = None,
-    ) -> Dict[str, Any]:
+    ) -> SpectralResult:
         """Advanced spectral measures (H1H2, H2H4, H4H2kHz, etc.)."""
         effective_email = email if email is not None else self._default_email
         sv_id = upload_assign_file_id(self._c, self._base, sustained_vowel, effective_email)
@@ -402,7 +423,7 @@ class AdvancedVoiceAnalysisNamespace:
         sustained_vowel: AudioInput,
         connected_speech: AudioInput,
         email: Optional[str] = None,
-    ) -> Dict[str, Any]:
+    ) -> SzRatioResult:
         """S/Z ratio: sustained /s/ vs /z/ duration, a screening tool for vocal pathology."""
         effective_email = email if email is not None else self._default_email
         sv_id = upload_assign_file_id(self._c, self._base, sustained_vowel, effective_email)
@@ -417,7 +438,7 @@ class AdvancedVoiceAnalysisNamespace:
         self,
         sustained_vowel: AudioInput,
         email: Optional[str] = None,
-    ) -> Dict[str, Any]:
+    ) -> GneResult:
         """GNE: Glottal-to-Noise Excitation ratio."""
         effective_email = email if email is not None else self._default_email
         sv_id = upload_assign_file_id(self._c, self._base, sustained_vowel, effective_email)
@@ -432,7 +453,7 @@ class AdvancedVoiceAnalysisNamespace:
         sustained_vowel: AudioInput,
         gender: int = 1,
         email: Optional[str] = None,
-    ) -> Dict[str, Any]:
+    ) -> FormantStatisticsResult:
         """Formant statistics (F1, F2, F3 means and ranges)."""
         effective_email = email if email is not None else self._default_email
         sv_id = upload_assign_file_id(self._c, self._base, sustained_vowel, effective_email)
@@ -446,7 +467,7 @@ class AdvancedVoiceAnalysisNamespace:
         self,
         sustained_vowel: AudioInput,
         email: Optional[str] = None,
-    ) -> Dict[str, Any]:
+    ) -> AbiResult:
         """ABI: Acoustic Breathiness Index."""
         effective_email = email if email is not None else self._default_email
         sv_id = upload_assign_file_id(self._c, self._base, sustained_vowel, effective_email)
@@ -460,7 +481,7 @@ class AdvancedVoiceAnalysisNamespace:
         self,
         sustained_vowel: AudioInput,
         email: Optional[str] = None,
-    ) -> Dict[str, Any]:
+    ) -> VoiceDynamicsResult:
         """Voice dynamics: perturbation measures over time."""
         effective_email = email if email is not None else self._default_email
         sv_id = upload_assign_file_id(self._c, self._base, sustained_vowel, effective_email)

@@ -24,6 +24,20 @@ from .exceptions import (
     VocametrixValidationError,
 )
 from ._namespaces import TranscriptionEvent
+from ._response_types import (
+    AvqiResult,
+    CppResult,
+    DsiResult,
+    EgemapsResult,
+    HnrResult,
+    JitterShimmerResult,
+    PhonemeResult,
+    PronunciationResult,
+    ProsodySimilarityResult,
+    SoundLevelResult,
+    TtsResult,
+    VrpResult,
+)
 
 try:
     __version__ = _version("vocametrix")
@@ -41,4 +55,16 @@ __all__ = [
     "VocametrixRateLimitError",
     "VocametrixServerError",
     "VocametrixValidationError",
+    "AvqiResult",
+    "CppResult",
+    "DsiResult",
+    "EgemapsResult",
+    "HnrResult",
+    "JitterShimmerResult",
+    "PhonemeResult",
+    "PronunciationResult",
+    "ProsodySimilarityResult",
+    "SoundLevelResult",
+    "TtsResult",
+    "VrpResult",
 ]

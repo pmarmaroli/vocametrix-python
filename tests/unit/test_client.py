@@ -388,3 +388,30 @@ async def test_async_client_close_awaits_aclose():
     client = AsyncVocametrixClient(api_key="key")
     assert inspect.iscoroutinefunction(client.close)
     await client.close()
+
+
+def test_response_types_importable_from_top_level():
+    from vocametrix import AvqiResult, DsiResult, CppResult
+    assert isinstance(AvqiResult.__annotations__, dict)
+    assert "AVQI" in AvqiResult.__annotations__
+    assert "DSI" in DsiResult.__annotations__
+    assert "CPP" in CppResult.__annotations__
+
+
+@respx.mock
+def test_avqi_returns_typed_result(tmp_path):
+    wav = tmp_path / "v.wav"
+    wav.write_bytes(b"RIFF" + b"\x00" * 40)
+
+    respx.post(f"{BASE}/api/assignFileId").mock(
+        return_value=httpx.Response(200, json={"fileId": "f1"})
+    )
+    respx.get(f"{BASE}/api/calculate-avqi").mock(
+        return_value=httpx.Response(200, json={"AVQI": 1.8, "CPP": 12.3})
+    )
+
+    with VocametrixClient(api_key="key") as c:
+        result = c.avqi.calculate(sustained_vowel=str(wav))
+
+    avqi_val: float = result["AVQI"]
+    assert avqi_val == 1.8
