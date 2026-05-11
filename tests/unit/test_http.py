@@ -147,6 +147,67 @@ def test_bytes_mp3_upload_uses_mp3_filename_and_content_type():
     assert captured.get("content_type") == "audio/mp3"
 
 
+def test_retry_after_is_capped_at_max():
+    import vocametrix._http as _http
+    assert _http._backoff(0, retry_after=3600) == _http._MAX_RETRY_AFTER
+
+
+def test_retry_after_below_cap_is_honoured():
+    import vocametrix._http as _http
+    assert _http._backoff(0, retry_after=10) == 10.0
+
+
+@respx.mock
+def test_transport_error_is_logged_on_retry(monkeypatch, caplog):
+    import logging
+    import vocametrix._http as _http
+    monkeypatch.setattr(_http.time, "sleep", lambda s: None)
+
+    call_count = 0
+
+    def flaky(request):
+        nonlocal call_count
+        call_count += 1
+        if call_count == 1:
+            raise httpx.TransportError("connection reset")
+        return httpx.Response(200, json={"ok": True})
+
+    client = httpx.Client()
+    respx.get(f"{BASE}/test").mock(side_effect=flaky)
+
+    with caplog.at_level(logging.DEBUG, logger="vocametrix._http"):
+        resp = request_with_retry(client, "GET", f"{BASE}/test")
+
+    assert resp.json() == {"ok": True}
+    assert any("TransportError" in r.message or "transport" in r.message.lower() for r in caplog.records)
+
+
+def test_sse_json_error_is_logged(monkeypatch, caplog):
+    import logging
+    import contextlib
+    import vocametrix._http as _http
+
+    def fake_stream(method, url, **kwargs):
+        @contextlib.contextmanager
+        def ctx():
+            class FakeResp:
+                is_success = True
+                status_code = 200
+                def iter_text(self):
+                    yield 'data: {NOT JSON}\n\ndata: {"status":"Succeeded"}\n\n'
+            yield FakeResp()
+        return ctx()
+
+    monkeypatch.setattr(_http.httpx, "stream", fake_stream)
+
+    with caplog.at_level(logging.DEBUG, logger="vocametrix._http"):
+        events = list(_http.sse_stream("https://api.example.com", "txn-1", "key"))
+
+    assert len(events) == 1
+    assert events[0]["status"] == "Succeeded"
+    assert any("SSE" in r.message or "json" in r.message.lower() for r in caplog.records)
+
+
 def test_sse_stream_uses_header_auth_not_url(monkeypatch):
     """API key must be in X-API-Key header, not ?apiKey= query string."""
     import vocametrix._http as _http

@@ -15,9 +15,13 @@ import warnings
 from pathlib import Path
 from typing import Any, Dict, Iterator, Optional, Union
 
+import logging
+
 import httpx
 
 from .exceptions import VocametrixRateLimitError, VocametrixServerError, raise_for_status
+
+_logger = logging.getLogger(__name__)
 
 _AUDIO_MAGIC: list[tuple[bytes, str]] = [
     (b"ID3", "mp3"),
@@ -40,11 +44,12 @@ def _detect_audio_format(data: bytes) -> str:
 _RETRYABLE = {429, 500, 502, 503, 504}
 _MAX_RETRIES = 3
 _BASE_BACKOFF = 2.0  # seconds
+_MAX_RETRY_AFTER = 60  # seconds — cap server-supplied Retry-After
 
 
 def _backoff(attempt: int, retry_after: Optional[int] = None) -> float:
     if retry_after is not None:
-        return float(retry_after)
+        return float(min(retry_after, _MAX_RETRY_AFTER))
     return _BASE_BACKOFF * (2 ** attempt)
 
 
@@ -61,7 +66,9 @@ def request_with_retry(
         except httpx.TransportError as exc:
             if attempt == _MAX_RETRIES:
                 raise
-            time.sleep(_backoff(attempt))
+            wait = _backoff(attempt)
+            _logger.debug("TransportError on attempt %d, retrying in %.1fs: %s", attempt + 1, wait, exc)
+            time.sleep(wait)
             continue
 
         if resp.status_code not in _RETRYABLE or attempt == _MAX_RETRIES:
@@ -77,12 +84,12 @@ def request_with_retry(
                 raise_for_status(resp.status_code, body, retry_after=retry_after)
             return resp
 
-        # Retriable — wait and retry
         retry_after = None
         if resp.status_code == 429:
             ra = resp.headers.get("Retry-After")
             retry_after = int(ra) if ra and ra.isdigit() else None
         wait = _backoff(attempt, retry_after)
+        _logger.debug("HTTP %d on attempt %d, retrying in %.1fs", resp.status_code, attempt + 1, wait)
         time.sleep(wait)
 
 
@@ -197,4 +204,4 @@ def sse_stream(
                     try:
                         yield _json.loads(raw)
                     except _json.JSONDecodeError:
-                        pass
+                        _logger.debug("SSE: skipped non-JSON event: %r", raw)
