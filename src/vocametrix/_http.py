@@ -56,8 +56,7 @@ def request_with_retry(
                 if resp.status_code == 429:
                     ra = resp.headers.get("Retry-After")
                     retry_after = int(ra) if ra and ra.isdigit() else 60
-                    raise_for_status(resp.status_code, body, retry_after=retry_after)
-                raise_for_status(resp.status_code, body)
+                raise_for_status(resp.status_code, body, retry_after=retry_after)
             return resp
 
         # Retriable — wait and retry
