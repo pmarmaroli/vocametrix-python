@@ -36,3 +36,15 @@ def test_server_error_carries_body():
     err = VocametrixServerError("oops", status_code=500, body={"error": "crash"})
     assert err.body == {"error": "crash"}
     assert err.status_code == 500
+
+
+def test_raise_for_status_passes_retry_after_to_rate_limit_error():
+    with pytest.raises(VocametrixRateLimitError) as exc_info:
+        raise_for_status(429, {"error": "rate limited"}, retry_after=42)
+    assert exc_info.value.retry_after == 42
+
+
+def test_raise_for_status_retry_after_defaults_to_none():
+    with pytest.raises(VocametrixRateLimitError) as exc_info:
+        raise_for_status(429, {"error": "rate limited"})
+    assert exc_info.value.retry_after is None

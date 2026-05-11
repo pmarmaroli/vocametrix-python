@@ -41,7 +41,7 @@ class VocametrixServerError(VocametrixError):
     """5xx — server error. SDK retries automatically with backoff."""
 
 
-def raise_for_status(status_code: int, body: Any) -> None:
+def raise_for_status(status_code: int, body: Any, retry_after: Optional[int] = None) -> None:
     """Raise the appropriate exception for a non-2xx status code."""
     msg = str(body) if body else f"HTTP {status_code}"
     if status_code == 401:
@@ -53,7 +53,7 @@ def raise_for_status(status_code: int, body: Any) -> None:
     if status_code == 422:
         raise VocametrixValidationError(msg, status_code=status_code, body=body)
     if status_code == 429:
-        raise VocametrixRateLimitError(msg, body=body)
+        raise VocametrixRateLimitError(msg, retry_after=retry_after, body=body)
     if status_code >= 500:
         raise VocametrixServerError(msg, status_code=status_code, body=body)
     raise VocametrixError(msg, status_code=status_code, body=body)
