@@ -40,3 +40,55 @@ def test_rate_limit_error_carries_retry_after(monkeypatch):
         request_with_retry(client, "POST", f"{BASE}/api/assignFileId")
 
     assert exc_info.value.retry_after == 45
+
+
+@respx.mock
+def test_azure_put_does_not_send_api_key(tmp_path):
+    """Azure PUT must use a headerless client — API key must not be forwarded."""
+    wav = tmp_path / "test.wav"
+    wav.write_bytes(b"RIFF" + b"\x00" * 40)
+
+    captured_headers = {}
+
+    def capture_put(request):
+        captured_headers.update(dict(request.headers))
+        return httpx.Response(201)
+
+    client = httpx.Client(headers={"X-API-Key": "secret-key"})
+    respx.post(f"{BASE}/api/get-blob-url").mock(
+        return_value=httpx.Response(200, json={
+            "uploadURL": "https://blob.windows.net/put",
+            "blobURL": "https://blob.windows.net/read",
+        })
+    )
+    respx.put("https://blob.windows.net/put").mock(side_effect=capture_put)
+
+    from vocametrix._http import upload_blob_url
+    upload_blob_url(client, BASE, str(wav))
+
+    assert "x-api-key" not in {k.lower() for k in captured_headers}
+
+
+@respx.mock
+def test_upload_uses_mp3_content_type(tmp_path):
+    """Content-Type must match file extension, not always audio/wav."""
+    mp3 = tmp_path / "audio.mp3"
+    mp3.write_bytes(b"\xff\xfb" + b"\x00" * 40)
+
+    captured_content_type = {}
+
+    def capture_upload(request):
+        body = request.content.decode("latin-1")
+        for line in body.splitlines():
+            if "Content-Type:" in line and "audio" in line:
+                captured_content_type["value"] = line.split("Content-Type:")[-1].strip()
+                break
+        return httpx.Response(200, json={"fileId": "mp3-file"})
+
+    client = httpx.Client(headers={"X-API-Key": "key"})
+    respx.post(f"{BASE}/api/assignFileId").mock(side_effect=capture_upload)
+
+    from vocametrix._http import upload_assign_file_id
+    upload_assign_file_id(client, BASE, str(mp3), email="test@example.com")
+
+    assert captured_content_type.get("value") == "audio/mpeg"

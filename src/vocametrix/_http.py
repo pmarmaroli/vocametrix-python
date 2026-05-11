@@ -7,6 +7,9 @@ so the generated layer can be replaced without touching this code.
 
 from __future__ import annotations
 
+import contextlib
+import io
+import mimetypes
 import time
 import warnings
 from pathlib import Path
@@ -71,10 +74,22 @@ def request_with_retry(
 AudioInput = Union[str, Path, bytes]
 
 
-def _read_audio(audio: AudioInput) -> bytes:
+def _audio_content_type(audio: AudioInput) -> str:
     if isinstance(audio, bytes):
-        return audio
-    return Path(audio).read_bytes()
+        return "audio/wav"
+    ct, _ = mimetypes.guess_type(str(audio))
+    return ct if ct and ct.startswith("audio/") else "audio/wav"
+
+
+@contextlib.contextmanager
+def _open_audio(audio: AudioInput):  # type: ignore[return]
+    """Yield (file_like, filename) without loading the whole file into memory."""
+    if isinstance(audio, bytes):
+        yield io.BytesIO(audio), "audio.wav"
+    else:
+        path = Path(audio)
+        with open(path, "rb") as f:
+            yield f, path.name
 
 
 def upload_assign_file_id(
@@ -87,14 +102,15 @@ def upload_assign_file_id(
     assignFileId upload pattern — used by all Praat-backed calculators.
     Returns the fileId string.
     """
-    data = _read_audio(audio)
-    resp = request_with_retry(
-        client,
-        "POST",
-        f"{base_url}/api/assignFileId",
-        files={"audio": ("audio.wav", data, "audio/wav")},
-        data={"email": email},
-    )
+    content_type = _audio_content_type(audio)
+    with _open_audio(audio) as (f, fname):
+        resp = request_with_retry(
+            client,
+            "POST",
+            f"{base_url}/api/assignFileId",
+            files={"audio": (fname, f, content_type)},
+            data={"email": email},
+        )
     return resp.json()["fileId"]
 
 
@@ -112,13 +128,14 @@ def upload_blob_url(
     upload_url: str = data["uploadURL"]
     blob_url: str = data["blobURL"]
 
-    audio_bytes = _read_audio(audio)
-    # Azure PUT — not retried (the signed URL is single-use)
-    put = client.put(
-        upload_url,
-        content=audio_bytes,
-        headers={"x-ms-blob-type": "BlockBlob", "Content-Type": "audio/wav"},
-    )
+    content_type = _audio_content_type(audio)
+    # Use a bare client so the Vocametrix API key is NOT forwarded to Azure Storage.
+    with _open_audio(audio) as (f, _fname), httpx.Client() as bare_client:
+        put = bare_client.put(
+            upload_url,
+            content=f,
+            headers={"x-ms-blob-type": "BlockBlob", "Content-Type": content_type},
+        )
     if not put.is_success:
         raise VocametrixServerError(f"Azure upload failed: {put.status_code} {put.text}")
 
