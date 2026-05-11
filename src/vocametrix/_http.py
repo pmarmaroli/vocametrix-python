@@ -205,3 +205,124 @@ def sse_stream(
                         yield _json.loads(raw)
                     except _json.JSONDecodeError:
                         _logger.debug("SSE: skipped non-JSON event: %r", raw)
+
+
+# ── Async HTTP helpers ────────────────────────────────────────────────────────
+
+import asyncio as _asyncio
+from typing import AsyncIterator as _AsyncIterator
+
+
+async def request_with_retry_async(
+    client: "httpx.AsyncClient",
+    method: str,
+    url: str,
+    **kwargs: Any,
+) -> httpx.Response:
+    """Async equivalent of request_with_retry."""
+    for attempt in range(_MAX_RETRIES + 1):
+        try:
+            resp = await client.request(method, url, **kwargs)
+        except httpx.TransportError as exc:
+            if attempt == _MAX_RETRIES:
+                raise
+            wait = _backoff(attempt)
+            _logger.debug("Async TransportError on attempt %d, retrying in %.1fs: %s", attempt + 1, wait, exc)
+            await _asyncio.sleep(wait)
+            continue
+
+        if resp.status_code not in _RETRYABLE or attempt == _MAX_RETRIES:
+            if not resp.is_success:
+                try:
+                    body = resp.json()
+                except Exception:
+                    body = resp.text
+                retry_after = None
+                if resp.status_code == 429:
+                    ra = resp.headers.get("Retry-After")
+                    retry_after = int(ra) if ra and ra.isdigit() else 60
+                raise_for_status(resp.status_code, body, retry_after=retry_after)
+            return resp
+
+        retry_after = None
+        if resp.status_code == 429:
+            ra = resp.headers.get("Retry-After")
+            retry_after = int(ra) if ra and ra.isdigit() else None
+        wait = _backoff(attempt, retry_after)
+        _logger.debug("Async HTTP %d on attempt %d, retrying in %.1fs", resp.status_code, attempt + 1, wait)
+        await _asyncio.sleep(wait)
+
+
+async def upload_assign_file_id_async(
+    client: "httpx.AsyncClient",
+    base_url: str,
+    audio: AudioInput,
+    email: str = "info@vocametrix.com",
+) -> str:
+    content_type = _audio_content_type(audio)
+    with _open_audio(audio) as (f, fname):
+        resp = await request_with_retry_async(
+            client,
+            "POST",
+            f"{base_url}/api/assignFileId",
+            files={"audio": (fname, f, content_type)},
+            data={"email": email},
+        )
+    return resp.json()["fileId"]
+
+
+async def upload_blob_url_async(
+    client: "httpx.AsyncClient",
+    base_url: str,
+    audio: AudioInput,
+) -> str:
+    resp = await request_with_retry_async(client, "POST", f"{base_url}/api/get-blob-url")
+    data = resp.json()
+    upload_url: str = data["uploadURL"]
+    blob_url: str = data["blobURL"]
+
+    content_type = _audio_content_type(audio)
+    with _open_audio(audio) as (f, _fname):
+        async with httpx.AsyncClient() as bare_client:
+            put = await bare_client.put(
+                upload_url,
+                content=f,
+                headers={"x-ms-blob-type": "BlockBlob", "Content-Type": content_type},
+            )
+    if not put.is_success:
+        raise VocametrixServerError(f"Azure upload failed: {put.status_code} {put.text}")
+
+    return blob_url
+
+
+async def sse_stream_async(
+    base_url: str,
+    transcription_id: str,
+    api_key: str,
+    timeout: float = 700.0,
+) -> _AsyncIterator["Dict[str, Any]"]:
+    import json as _json
+    url = f"{base_url}/api/transcription-progress/{transcription_id}"
+    async with httpx.AsyncClient() as client:
+        async with client.stream(
+            "GET", url, timeout=timeout, headers={"X-API-Key": api_key}
+        ) as resp:
+            if not resp.is_success:
+                raise_for_status(resp.status_code, await resp.aread())
+            buffer = ""
+            async for chunk in resp.aiter_text():
+                buffer += chunk
+                buffer = buffer.replace("\r\n", "\n")
+                while "\n\n" in buffer:
+                    event_text, buffer = buffer.split("\n\n", 1)
+                    data_lines = [
+                        line[5:].lstrip(" ")
+                        for line in event_text.splitlines()
+                        if line.startswith("data:")
+                    ]
+                    if data_lines:
+                        raw = "\n".join(data_lines)
+                        try:
+                            yield _json.loads(raw)
+                        except _json.JSONDecodeError:
+                            _logger.debug("SSE async: skipped non-JSON event: %r", raw)

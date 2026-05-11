@@ -338,16 +338,6 @@ def test_default_email_is_info_vocametrix(tmp_path):
     assert captured.get("email") == "info@vocametrix.com"
 
 
-def test_async_proxy_wrapper_preserves_signature():
-    import inspect
-    from vocametrix.client import _AsyncNamespaceProxy
-    from vocametrix._namespaces import AvqiNamespace
-    import httpx as _httpx
-    sync_ns = AvqiNamespace(_httpx.Client(), "https://x.com", "info@vocametrix.com")
-    proxy = _AsyncNamespaceProxy(sync_ns)
-    wrapped = proxy.calculate
-    assert wrapped.__name__ == "calculate"
-
 
 def test_transcription_event_terminal_success_is_case_insensitive():
     from vocametrix import TranscriptionEvent
@@ -368,3 +358,33 @@ def test_transcription_event_pending_is_not_terminal():
     e = TranscriptionEvent(status="Running", progress=0.5, display_text=None, raw={})
     assert not e.is_terminal_success
     assert not e.is_terminal_failure
+
+
+@pytest.mark.asyncio
+@respx.mock
+async def test_async_client_uses_real_async_http(tmp_path):
+    """AsyncVocametrixClient must use httpx.AsyncClient, not wrap a sync one."""
+    wav = tmp_path / "v.wav"
+    wav.write_bytes(b"RIFF" + b"\x00" * 40)
+
+    respx.post(f"{BASE}/api/assignFileId").mock(
+        return_value=httpx.Response(200, json={"fileId": "async-f"})
+    )
+    respx.get(f"{BASE}/api/calculate-avqi").mock(
+        return_value=httpx.Response(200, json={"AVQI": 2.2})
+    )
+
+    async with AsyncVocametrixClient(api_key="key") as client:
+        assert isinstance(client._http, httpx.AsyncClient)
+        result = await client.avqi.calculate(sustained_vowel=str(wav))
+
+    assert result["AVQI"] == 2.2
+
+
+@pytest.mark.asyncio
+async def test_async_client_close_awaits_aclose():
+    """close() must await aclose() on the AsyncClient."""
+    import inspect
+    client = AsyncVocametrixClient(api_key="key")
+    assert inspect.iscoroutinefunction(client.close)
+    await client.close()

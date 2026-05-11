@@ -5,7 +5,6 @@ AsyncVocametrixClient — async variant using httpx.AsyncClient.
 
 from __future__ import annotations
 
-import functools
 import os
 from typing import Optional
 
@@ -97,40 +96,14 @@ class VocametrixClient:
         self.close()
 
 
-class _AsyncNamespaceProxy:
-    """
-    Wraps a sync namespace so every callable attribute becomes an awaitable via
-    asyncio.to_thread. Namespace implementations must be stateless or thread-safe,
-    since methods run in the default thread pool.
-    """
-
-    def __init__(self, sync_ns: object) -> None:
-        self._sync = sync_ns
-
-    def __getattr__(self, name: str):  # type: ignore[return]
-        import asyncio
-        attr = getattr(self._sync, name)
-        if not callable(attr):
-            return attr
-
-        @functools.wraps(attr)
-        async def wrapper(*args: object, **kwargs: object) -> object:
-            return await asyncio.to_thread(attr, *args, **kwargs)
-
-        return wrapper
-
-
 class AsyncVocametrixClient:
     """
-    Async Vocametrix API client.
+    Async Vocametrix API client using httpx.AsyncClient for true async I/O.
 
     Usage::
 
         async with AsyncVocametrixClient(api_key="...") as client:
             result = await client.avqi.calculate(sustained_vowel="vowel.wav")
-
-    Every namespace method is a coroutine that runs the underlying sync call
-    in a thread pool via asyncio.to_thread, keeping the event loop unblocked.
     """
 
     def __init__(
@@ -148,33 +121,51 @@ class AsyncVocametrixClient:
         self._api_key = key
         self._email = email
         self._base_url = base_url.rstrip("/")
-        self._sync_http = httpx.Client(
+        self._http = httpx.AsyncClient(
             headers={"X-API-Key": key},
             timeout=timeout,
         )
         self._init_namespaces()
 
     def _init_namespaces(self) -> None:
+        from ._async_namespaces import (
+            AsyncAdvancedVoiceAnalysisNamespace,
+            AsyncAvqiNamespace,
+            AsyncCppNamespace,
+            AsyncDsiNamespace,
+            AsyncEgemapsNamespace,
+            AsyncHnrNamespace,
+            AsyncJitterShimmerNamespace,
+            AsyncPhonemeNamespace,
+            AsyncPronunciationNamespace,
+            AsyncProsodyNamespace,
+            AsyncSoundLevelNamespace,
+            AsyncStutteringNamespace,
+            AsyncTranscriptionNamespace,
+            AsyncTtsNamespace,
+            AsyncVrpNamespace,
+        )
         b = self._base_url
         e = self._email
-        self.avqi = _AsyncNamespaceProxy(AvqiNamespace(self._sync_http, b, e))
-        self.dsi = _AsyncNamespaceProxy(DsiNamespace(self._sync_http, b, e))
-        self.cpp = _AsyncNamespaceProxy(CppNamespace(self._sync_http, b, e))
-        self.hnr = _AsyncNamespaceProxy(HnrNamespace(self._sync_http, b, e))
-        self.jitter_shimmer = _AsyncNamespaceProxy(JitterShimmerNamespace(self._sync_http, b, e))
-        self.vrp = _AsyncNamespaceProxy(VrpNamespace(self._sync_http, b, e))
-        self.pronunciation = _AsyncNamespaceProxy(PronunciationNamespace(self._sync_http, b))
-        self.transcription = _AsyncNamespaceProxy(TranscriptionNamespace(self._sync_http, b, self._api_key))
-        self.tts = _AsyncNamespaceProxy(TtsNamespace(self._sync_http, b))
-        self.phoneme = _AsyncNamespaceProxy(PhonemeNamespace(self._sync_http, b, e))
-        self.stuttering = _AsyncNamespaceProxy(StutteringNamespace(self._sync_http, b, e))
-        self.prosody = _AsyncNamespaceProxy(ProsodyNamespace(self._sync_http, b, e))
-        self.egemaps = _AsyncNamespaceProxy(EgemapsNamespace(self._sync_http, b, e))
-        self.sound_level = _AsyncNamespaceProxy(SoundLevelNamespace(self._sync_http, b))
-        self.advanced = _AsyncNamespaceProxy(AdvancedVoiceAnalysisNamespace(self._sync_http, b, e))
+        h = self._http
+        self.avqi = AsyncAvqiNamespace(h, b, e)
+        self.dsi = AsyncDsiNamespace(h, b, e)
+        self.cpp = AsyncCppNamespace(h, b, e)
+        self.hnr = AsyncHnrNamespace(h, b, e)
+        self.jitter_shimmer = AsyncJitterShimmerNamespace(h, b, e)
+        self.vrp = AsyncVrpNamespace(h, b, e)
+        self.pronunciation = AsyncPronunciationNamespace(h, b)
+        self.transcription = AsyncTranscriptionNamespace(h, b, self._api_key)
+        self.tts = AsyncTtsNamespace(h, b)
+        self.phoneme = AsyncPhonemeNamespace(h, b, e)
+        self.stuttering = AsyncStutteringNamespace(h, b, e)
+        self.prosody = AsyncProsodyNamespace(h, b, e)
+        self.egemaps = AsyncEgemapsNamespace(h, b, e)
+        self.sound_level = AsyncSoundLevelNamespace(h, b)
+        self.advanced = AsyncAdvancedVoiceAnalysisNamespace(h, b, e)
 
     async def close(self) -> None:
-        self._sync_http.close()
+        await self._http.aclose()
 
     async def __aenter__(self) -> "AsyncVocametrixClient":
         return self
