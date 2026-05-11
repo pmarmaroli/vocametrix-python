@@ -1,9 +1,10 @@
 """
 Ergonomic namespace classes exposed on VocametrixClient.
 
-Each namespace hides upload patterns, case-style differences, SSE auth quirks,
-and the start_sec=0 falsy bug from callers. Parameters and return values use
-plain Python snake_case dicts; typed Pydantic wrappers are in _models.py.
+Each namespace hides upload patterns, case-style differences, and SSE auth
+quirks. Parameters and return values are plain Python dicts (snake_case).
+Endpoints not covered here are accessible via the generated client in
+`vocametrix._generated`.
 """
 
 from __future__ import annotations
@@ -122,6 +123,13 @@ class JitterShimmerNamespace:
 
 
 class VrpNamespace:
+    """
+    Voice Range Profile (VRP) — also known as phonetogram or ambitus.
+
+    The backend endpoint is /api/calculate-ambitus; "ambitus" and "VRP" refer
+    to the same measurement (the pitch/intensity envelope of a speaker's vocal
+    range). This namespace is named VRP for clinical clarity.
+    """
     def __init__(self, client: httpx.Client, base_url: str, default_email: str = "sdk@vocametrix.com") -> None:
         self._c = client
         self._base = base_url
@@ -238,6 +246,17 @@ class StutteringNamespace:
         poll_interval: float = 5.0,
         timeout: float = 620.0,
     ) -> Dict[str, Any]:
+        """
+        Classify stuttering events in the audio file.
+
+        Polls /api/therapy-status/{session_id} and fetches results from
+        /api/therapy-result/{session_id}. The server reuses its therapy-planning
+        job system for stuttering classification — these therapy endpoints are
+        intentional, not a routing mistake.
+
+        Raises VocametrixServerError if the job fails or does not complete within
+        `timeout` seconds.
+        """
         import time as _time
         from .exceptions import VocametrixServerError
 
