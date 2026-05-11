@@ -1,0 +1,65 @@
+name: Auto release
+
+# Triggers on every push to master. Skips its own version-bump commits to
+# prevent an infinite loop.
+on:
+  push:
+    branches: [master]
+
+jobs:
+  release:
+    if: "!startsWith(github.event.head_commit.message, 'chore: bump version')"
+    runs-on: ubuntu-latest
+    environment: pypi
+    permissions:
+      contents: write   # push version-bump commit + tag back to master
+      id-token: write   # OIDC trusted publishing to PyPI (no token needed)
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Bump patch version
+        id: version
+        run: |
+          python - << 'PYEOF'
+          import re, os
+          content = open("pyproject.toml").read()
+          m = re.search(r'(version = ")(\d+\.\d+\.)(\d+)(")', content)
+          new_ver = m.group(2) + str(int(m.group(3)) + 1)
+          new_content = re.sub(
+              r'(version = ")\d+\.\d+\.\d+(")',
+              rf'\g<1>{new_ver}\2',
+              content, count=1,
+          )
+          open("pyproject.toml", "w").write(new_content)
+          with open(os.environ["GITHUB_OUTPUT"], "a") as f:
+              f.write(f"version={new_ver}\n")
+          print(f"Bumped to {new_ver}")
+          PYEOF
+
+      - name: Install build tools
+        run: pip install hatchling build
+
+      - name: Build
+        run: python -m build
+
+      - name: Publish to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+        # Uses OIDC trusted publishing — no API token required.
+        # Ensure this repo + workflow is registered at:
+        # https://pypi.org/manage/project/vocametrix/settings/publishing/
+
+      - name: Commit version bump and push tag
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add pyproject.toml
+          git commit -m "chore: bump version to ${{ steps.version.outputs.version }}"
+          git tag "v${{ steps.version.outputs.version }}"
+          git push origin master --follow-tags
