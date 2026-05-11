@@ -24,7 +24,7 @@ _BASE_BACKOFF = 2.0  # seconds
 def _backoff(attempt: int, retry_after: Optional[int] = None) -> float:
     if retry_after is not None:
         return float(retry_after)
-    return _BASE_BACKOFF ** attempt
+    return _BASE_BACKOFF * (2 ** attempt)
 
 
 def request_with_retry(
@@ -53,7 +53,7 @@ def request_with_retry(
                 if resp.status_code == 429:
                     ra = resp.headers.get("Retry-After")
                     retry_after = int(ra) if ra and ra.isdigit() else 60
-                    raise_for_status(resp.status_code, body)
+                    raise_for_status(resp.status_code, body, retry_after=retry_after)
                 raise_for_status(resp.status_code, body)
             return resp
 
@@ -64,8 +64,6 @@ def request_with_retry(
             retry_after = int(ra) if ra and ra.isdigit() else None
         wait = _backoff(attempt, retry_after)
         time.sleep(wait)
-
-    raise VocametrixServerError("Max retries exceeded")
 
 
 # ── Upload helpers ────────────────────────────────────────────────────────────
