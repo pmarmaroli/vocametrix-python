@@ -9,7 +9,7 @@ description = "Official Python SDK for the Vocametrix voice analysis API"
 readme = "README.md"
 license = { file = "LICENSE" }
 requires-python = ">=3.9"
-authors = [{ name = "Vocametrix", email = "contact@vocametrix.com" }]
+authors = [{ name = "Vocametrix", email = "info@vocametrix.com" }]
 keywords = [
   "voice-analysis", "speech-therapy", "avqi", "dsi", "jitter", "shimmer",
   "pronunciation", "acoustic", "praat", "dysphonia", "vocametrix",
