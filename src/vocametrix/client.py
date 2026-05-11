@@ -96,17 +96,23 @@ class VocametrixClient:
 
 
 class _AsyncNamespaceProxy:
-    """Wraps a sync namespace so every method becomes an awaitable via asyncio.to_thread."""
+    """
+    Wraps a sync namespace so every callable attribute becomes an awaitable via
+    asyncio.to_thread. Namespace implementations must be stateless or thread-safe,
+    since methods run in the default thread pool.
+    """
 
     def __init__(self, sync_ns: object) -> None:
         self._sync = sync_ns
 
     def __getattr__(self, name: str):  # type: ignore[return]
         import asyncio
-        method = getattr(self._sync, name)
+        attr = getattr(self._sync, name)
+        if not callable(attr):
+            return attr
 
         async def wrapper(*args: object, **kwargs: object) -> object:
-            return await asyncio.to_thread(method, *args, **kwargs)
+            return await asyncio.to_thread(attr, *args, **kwargs)
 
         return wrapper
 
