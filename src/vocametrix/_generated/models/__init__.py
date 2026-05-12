@@ -120,13 +120,6 @@ from .post_syntax_checker_agent_response_200_metadata import (
     PostSyntaxCheckerAgentResponse200Metadata,
 )
 from .post_text_to_speech_body import PostTextToSpeechBody
-from .post_text_to_speech_generate_with_timing_body import PostTextToSpeechGenerateWithTimingBody
-from .post_text_to_speech_generate_with_timing_response_200 import (
-    PostTextToSpeechGenerateWithTimingResponse200,
-)
-from .post_text_to_speech_generate_with_timing_response_200_alignment import (
-    PostTextToSpeechGenerateWithTimingResponse200Alignment,
-)
 from .post_text_to_speech_response_200 import PostTextToSpeechResponse200
 from .post_therapy_approve_by_session_id_body import PostTherapyApproveBySessionIdBody
 from .post_therapy_approve_by_session_id_response_200 import (
@@ -263,9 +256,6 @@ __all__ = (
     "PostSyntaxCheckerAgentResponse200Analysis",
     "PostSyntaxCheckerAgentResponse200Metadata",
     "PostTextToSpeechBody",
-    "PostTextToSpeechGenerateWithTimingBody",
-    "PostTextToSpeechGenerateWithTimingResponse200",
-    "PostTextToSpeechGenerateWithTimingResponse200Alignment",
     "PostTextToSpeechResponse200",
     "PostTherapyApproveBySessionIdBody",
     "PostTherapyApproveBySessionIdResponse200",
