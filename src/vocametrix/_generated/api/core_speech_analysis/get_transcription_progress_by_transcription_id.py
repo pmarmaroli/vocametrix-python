@@ -14,6 +14,7 @@ def _get_kwargs(
     *,
     api_key: str,
 ) -> dict[str, Any]:
+
     params: dict[str, Any] = {}
 
     params["apiKey"] = api_key

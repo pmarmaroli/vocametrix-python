@@ -66,22 +66,17 @@ def regenerate(spec_url: str):
         shutil.rmtree(GENERATED_DIR)
     GENERATED_DIR.mkdir(parents=True)
 
-    # openapi-python-client outputs a package directory — find it
-    generated_pkg = next((d for d in tmp_out.iterdir() if d.is_dir()), None)
-    if generated_pkg:
-        for item in generated_pkg.iterdir():
-            dest = GENERATED_DIR / item.name
-            if item.is_dir():
-                shutil.copytree(item, dest)
-            else:
-                shutil.copy2(item, dest)
-    else:
-        for item in tmp_out.iterdir():
-            dest = GENERATED_DIR / item.name
-            if item.is_dir():
-                shutil.copytree(item, dest)
-            else:
-                shutil.copy2(item, dest)
+    # With --meta none, openapi-python-client writes the package CONTENTS
+    # directly into the output path (api/, models/, client.py, types.py,
+    # errors.py, __init__.py, py.typed) — there is no single wrapper package
+    # dir. Copy everything across; descending into the first subdir (e.g. api/)
+    # would drop models/ and the root modules and break all imports.
+    for item in tmp_out.iterdir():
+        dest = GENERATED_DIR / item.name
+        if item.is_dir():
+            shutil.copytree(item, dest)
+        else:
+            shutil.copy2(item, dest)
 
     shutil.rmtree(tmp_out)
 

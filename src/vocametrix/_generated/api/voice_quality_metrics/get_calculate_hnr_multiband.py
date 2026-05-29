@@ -17,6 +17,7 @@ def _get_kwargs(
     gender: GetCalculateHnrMultibandGender,
     version: str | Unset = UNSET,
 ) -> dict[str, Any]:
+
     params: dict[str, Any] = {}
 
     params["svFileId"] = sv_file_id

@@ -5,23 +5,29 @@ import httpx
 
 from ... import errors
 from ...client import AuthenticatedClient, Client
-from ...models.post_coaching_analysis_body import PostCoachingAnalysisBody
-from ...models.post_coaching_analysis_response_200 import PostCoachingAnalysisResponse200
+from ...models.post_text_to_speech_generate_with_timing_body import (
+    PostTextToSpeechGenerateWithTimingBody,
+)
+from ...models.post_text_to_speech_generate_with_timing_response_200 import (
+    PostTextToSpeechGenerateWithTimingResponse200,
+)
 from ...types import Response
 
 
 def _get_kwargs(
     *,
-    body: PostCoachingAnalysisBody,
+    body: PostTextToSpeechGenerateWithTimingBody,
 ) -> dict[str, Any]:
     headers: dict[str, Any] = {}
 
     _kwargs: dict[str, Any] = {
         "method": "post",
-        "url": "/api/coaching-analysis",
+        "url": "/api/text-to-speech/generate-with-timing",
     }
 
-    _kwargs["files"] = body.to_multipart()
+    _kwargs["json"] = body.to_dict()
+
+    headers["Content-Type"] = "application/json"
 
     _kwargs["headers"] = headers
     return _kwargs
@@ -29,9 +35,9 @@ def _get_kwargs(
 
 def _parse_response(
     *, client: AuthenticatedClient | Client, response: httpx.Response
-) -> Any | PostCoachingAnalysisResponse200 | None:
+) -> Any | PostTextToSpeechGenerateWithTimingResponse200 | None:
     if response.status_code == 200:
-        response_200 = PostCoachingAnalysisResponse200.from_dict(response.json())
+        response_200 = PostTextToSpeechGenerateWithTimingResponse200.from_dict(response.json())
 
         return response_200
 
@@ -59,7 +65,7 @@ def _parse_response(
 
 def _build_response(
     *, client: AuthenticatedClient | Client, response: httpx.Response
-) -> Response[Any | PostCoachingAnalysisResponse200]:
+) -> Response[Any | PostTextToSpeechGenerateWithTimingResponse200]:
     return Response(
         status_code=HTTPStatus(response.status_code),
         content=response.content,
@@ -71,20 +77,20 @@ def _build_response(
 def sync_detailed(
     *,
     client: AuthenticatedClient,
-    body: PostCoachingAnalysisBody,
-) -> Response[Any | PostCoachingAnalysisResponse200]:
-    """Single-file orchestrator. Accept a multipart upload with one audio file and run the full coaching
-    pipeline. Returns a…
+    body: PostTextToSpeechGenerateWithTimingBody,
+) -> Response[Any | PostTextToSpeechGenerateWithTimingResponse200]:
+    """Synthesize speech via ElevenLabs (model: eleven_multilingual_v2) and return per-character timing
+    alongside the audio.…
 
     Args:
-        body (PostCoachingAnalysisBody):
+        body (PostTextToSpeechGenerateWithTimingBody):
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
-        Response[Any | PostCoachingAnalysisResponse200]
+        Response[Any | PostTextToSpeechGenerateWithTimingResponse200]
     """
 
     kwargs = _get_kwargs(
@@ -101,20 +107,20 @@ def sync_detailed(
 def sync(
     *,
     client: AuthenticatedClient,
-    body: PostCoachingAnalysisBody,
-) -> Any | PostCoachingAnalysisResponse200 | None:
-    """Single-file orchestrator. Accept a multipart upload with one audio file and run the full coaching
-    pipeline. Returns a…
+    body: PostTextToSpeechGenerateWithTimingBody,
+) -> Any | PostTextToSpeechGenerateWithTimingResponse200 | None:
+    """Synthesize speech via ElevenLabs (model: eleven_multilingual_v2) and return per-character timing
+    alongside the audio.…
 
     Args:
-        body (PostCoachingAnalysisBody):
+        body (PostTextToSpeechGenerateWithTimingBody):
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
-        Any | PostCoachingAnalysisResponse200
+        Any | PostTextToSpeechGenerateWithTimingResponse200
     """
 
     return sync_detailed(
@@ -126,20 +132,20 @@ def sync(
 async def asyncio_detailed(
     *,
     client: AuthenticatedClient,
-    body: PostCoachingAnalysisBody,
-) -> Response[Any | PostCoachingAnalysisResponse200]:
-    """Single-file orchestrator. Accept a multipart upload with one audio file and run the full coaching
-    pipeline. Returns a…
+    body: PostTextToSpeechGenerateWithTimingBody,
+) -> Response[Any | PostTextToSpeechGenerateWithTimingResponse200]:
+    """Synthesize speech via ElevenLabs (model: eleven_multilingual_v2) and return per-character timing
+    alongside the audio.…
 
     Args:
-        body (PostCoachingAnalysisBody):
+        body (PostTextToSpeechGenerateWithTimingBody):
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
-        Response[Any | PostCoachingAnalysisResponse200]
+        Response[Any | PostTextToSpeechGenerateWithTimingResponse200]
     """
 
     kwargs = _get_kwargs(
@@ -154,20 +160,20 @@ async def asyncio_detailed(
 async def asyncio(
     *,
     client: AuthenticatedClient,
-    body: PostCoachingAnalysisBody,
-) -> Any | PostCoachingAnalysisResponse200 | None:
-    """Single-file orchestrator. Accept a multipart upload with one audio file and run the full coaching
-    pipeline. Returns a…
+    body: PostTextToSpeechGenerateWithTimingBody,
+) -> Any | PostTextToSpeechGenerateWithTimingResponse200 | None:
+    """Synthesize speech via ElevenLabs (model: eleven_multilingual_v2) and return per-character timing
+    alongside the audio.…
 
     Args:
-        body (PostCoachingAnalysisBody):
+        body (PostTextToSpeechGenerateWithTimingBody):
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
-        Any | PostCoachingAnalysisResponse200
+        Any | PostTextToSpeechGenerateWithTimingResponse200
     """
 
     return (

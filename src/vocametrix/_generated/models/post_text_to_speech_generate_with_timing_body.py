@@ -6,57 +6,55 @@ from typing import Any, TypeVar
 from attrs import define as _attrs_define
 from attrs import field as _attrs_field
 
-from .. import types
+from ..types import UNSET, Unset
 
-T = TypeVar("T", bound="PostCoachingAnalysisBatchBody")
+T = TypeVar("T", bound="PostTextToSpeechGenerateWithTimingBody")
 
 
 @_attrs_define
-class PostCoachingAnalysisBatchBody:
+class PostTextToSpeechGenerateWithTimingBody:
     """
     Attributes:
-        archive (str): REQUIRED (multipart file field, ZIP). Must contain manifest.csv at the root plus the audio files
-            referenced by manifest rows. Manifest schema: filename, label, language, mode, reference_text (one row per
-            audio).
+        text (str): Text to synthesize (1–2500 characters). REQUIRED.
+        is_ssml (bool | Unset): Boolean (optional, default false). Currently accepted but not applied to the request
+            body — flag is reserved for future SSML support.
     """
 
-    archive: str
+    text: str
+    is_ssml: bool | Unset = UNSET
     additional_properties: dict[str, Any] = _attrs_field(init=False, factory=dict)
 
     def to_dict(self) -> dict[str, Any]:
-        archive = self.archive
+        text = self.text
+
+        is_ssml = self.is_ssml
 
         field_dict: dict[str, Any] = {}
         field_dict.update(self.additional_properties)
         field_dict.update(
             {
-                "archive": archive,
+                "text": text,
             }
         )
+        if is_ssml is not UNSET:
+            field_dict["isSSML"] = is_ssml
 
         return field_dict
-
-    def to_multipart(self) -> types.RequestFiles:
-        files: types.RequestFiles = []
-
-        files.append(("archive", (None, str(self.archive).encode(), "text/plain")))
-
-        for prop_name, prop in self.additional_properties.items():
-            files.append((prop_name, (None, str(prop).encode(), "text/plain")))
-
-        return files
 
     @classmethod
     def from_dict(cls: type[T], src_dict: Mapping[str, Any]) -> T:
         d = dict(src_dict)
-        archive = d.pop("archive")
+        text = d.pop("text")
 
-        post_coaching_analysis_batch_body = cls(
-            archive=archive,
+        is_ssml = d.pop("isSSML", UNSET)
+
+        post_text_to_speech_generate_with_timing_body = cls(
+            text=text,
+            is_ssml=is_ssml,
         )
 
-        post_coaching_analysis_batch_body.additional_properties = d
-        return post_coaching_analysis_batch_body
+        post_text_to_speech_generate_with_timing_body.additional_properties = d
+        return post_text_to_speech_generate_with_timing_body
 
     @property
     def additional_keys(self) -> list[str]:

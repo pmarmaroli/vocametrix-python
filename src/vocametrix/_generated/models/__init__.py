@@ -23,15 +23,6 @@ from .get_calculate_spectral_advanced_gender import GetCalculateSpectralAdvanced
 from .get_calculate_spectral_advanced_response_200 import GetCalculateSpectralAdvancedResponse200
 from .get_calculate_sz_ratio_response_200 import GetCalculateSzRatioResponse200
 from .get_calculate_voice_dynamics_response_200 import GetCalculateVoiceDynamicsResponse200
-from .get_coaching_analysis_batch_by_job_id_response_200 import (
-    GetCoachingAnalysisBatchByJobIdResponse200,
-)
-from .get_coaching_analysis_batch_by_job_id_response_200_downloads import (
-    GetCoachingAnalysisBatchByJobIdResponse200Downloads,
-)
-from .get_coaching_analysis_batch_by_job_id_response_200_results_item import (
-    GetCoachingAnalysisBatchByJobIdResponse200ResultsItem,
-)
 from .get_gemaps_extract_response_200 import GetGemapsExtractResponse200
 from .get_gemaps_extract_response_200_chunk_info import GetGemapsExtractResponse200ChunkInfo
 from .get_gemaps_extract_response_200_metadata import GetGemapsExtractResponse200Metadata
@@ -57,16 +48,6 @@ from .post_classify_estonian_vowel_body import PostClassifyEstonianVowelBody
 from .post_classify_estonian_vowel_response_200 import PostClassifyEstonianVowelResponse200
 from .post_classify_stuttering_body import PostClassifyStutteringBody
 from .post_classify_stuttering_response_200 import PostClassifyStutteringResponse200
-from .post_coaching_analysis_batch_body import PostCoachingAnalysisBatchBody
-from .post_coaching_analysis_batch_response_200 import PostCoachingAnalysisBatchResponse200
-from .post_coaching_analysis_body import PostCoachingAnalysisBody
-from .post_coaching_analysis_response_200 import PostCoachingAnalysisResponse200
-from .post_coaching_analysis_response_200_audio import PostCoachingAnalysisResponse200Audio
-from .post_coaching_analysis_response_200_errors import PostCoachingAnalysisResponse200Errors
-from .post_coaching_analysis_response_200_results import PostCoachingAnalysisResponse200Results
-from .post_coaching_analysis_response_200_warnings_item import (
-    PostCoachingAnalysisResponse200WarningsItem,
-)
 from .post_french_to_ipa_agent_body import PostFrenchToIpaAgentBody
 from .post_french_to_ipa_agent_body_phonetic_input_item import (
     PostFrenchToIpaAgentBodyPhoneticInputItem,
@@ -120,6 +101,13 @@ from .post_syntax_checker_agent_response_200_metadata import (
     PostSyntaxCheckerAgentResponse200Metadata,
 )
 from .post_text_to_speech_body import PostTextToSpeechBody
+from .post_text_to_speech_generate_with_timing_body import PostTextToSpeechGenerateWithTimingBody
+from .post_text_to_speech_generate_with_timing_response_200 import (
+    PostTextToSpeechGenerateWithTimingResponse200,
+)
+from .post_text_to_speech_generate_with_timing_response_200_alignment import (
+    PostTextToSpeechGenerateWithTimingResponse200Alignment,
+)
 from .post_text_to_speech_response_200 import PostTextToSpeechResponse200
 from .post_therapy_approve_by_session_id_body import PostTherapyApproveBySessionIdBody
 from .post_therapy_approve_by_session_id_response_200 import (
@@ -191,9 +179,6 @@ __all__ = (
     "GetCalculateSpectralAdvancedResponse200",
     "GetCalculateSzRatioResponse200",
     "GetCalculateVoiceDynamicsResponse200",
-    "GetCoachingAnalysisBatchByJobIdResponse200",
-    "GetCoachingAnalysisBatchByJobIdResponse200Downloads",
-    "GetCoachingAnalysisBatchByJobIdResponse200ResultsItem",
     "GetGemapsExtractResponse200",
     "GetGemapsExtractResponse200ChunkInfo",
     "GetGemapsExtractResponse200EGeMAPSv02Features",
@@ -213,14 +198,6 @@ __all__ = (
     "PostClassifyEstonianVowelResponse200",
     "PostClassifyStutteringBody",
     "PostClassifyStutteringResponse200",
-    "PostCoachingAnalysisBatchBody",
-    "PostCoachingAnalysisBatchResponse200",
-    "PostCoachingAnalysisBody",
-    "PostCoachingAnalysisResponse200",
-    "PostCoachingAnalysisResponse200Audio",
-    "PostCoachingAnalysisResponse200Errors",
-    "PostCoachingAnalysisResponse200Results",
-    "PostCoachingAnalysisResponse200WarningsItem",
     "PostFrenchToIpaAgentBody",
     "PostFrenchToIpaAgentBodyPhoneticInputItem",
     "PostFrenchToIpaAgentResponse200",
@@ -256,6 +233,9 @@ __all__ = (
     "PostSyntaxCheckerAgentResponse200Analysis",
     "PostSyntaxCheckerAgentResponse200Metadata",
     "PostTextToSpeechBody",
+    "PostTextToSpeechGenerateWithTimingBody",
+    "PostTextToSpeechGenerateWithTimingResponse200",
+    "PostTextToSpeechGenerateWithTimingResponse200Alignment",
     "PostTextToSpeechResponse200",
     "PostTherapyApproveBySessionIdBody",
     "PostTherapyApproveBySessionIdResponse200",

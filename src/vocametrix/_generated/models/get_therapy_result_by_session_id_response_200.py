@@ -19,12 +19,17 @@ class GetTherapyResultBySessionIdResponse200:
             LangGraph workflow saved. Typical fields include `therapySession.sessionMetadata`, exercise plans, generated
             HTML paths (`html_clinician_final`, `output_file`), and free-form workflow output. The full keyset is determined
             by the Python workflow, not the JS layer.
-        classification_session (str | Unset): { success, session_id, patient_id, classification, classificationMetadata,
-            overallClassification, timestamp } — see /api/classify-stuttering documentation.
+        classification_session (float | Unset): { success, session_id, patient_id, classification,
+            classificationMetadata, overallClassification, timestamp }. `classification` is an array of ~4s blocks; each: {
+            blockId, startTime, stopTime (s), primaryType
+            (fluent/block/Soundrepetition/Wordrepetition/prolongation/interjection), secondaryTypes, confidence,
+            characteristics, transcription, words, phonemes }. `words` holds per-word timestamps { word, start, end } in
+            seconds (present when transcribe=true; blocks overlap, so a word may repeat across adjacent blocks). `phonemes`
+            is "N/A" unless includePhonemes=true.
     """
 
     therapy_session: str | Unset = UNSET
-    classification_session: str | Unset = UNSET
+    classification_session: float | Unset = UNSET
     additional_properties: dict[str, Any] = _attrs_field(init=False, factory=dict)
 
     def to_dict(self) -> dict[str, Any]:

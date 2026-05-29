@@ -14,6 +14,7 @@ def _get_kwargs(
     sv_file_id: str,
     gender: str,
 ) -> dict[str, Any]:
+
     params: dict[str, Any] = {}
 
     params["svFileId"] = sv_file_id

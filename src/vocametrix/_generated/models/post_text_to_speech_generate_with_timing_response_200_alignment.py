@@ -6,16 +6,21 @@ from typing import Any, TypeVar
 from attrs import define as _attrs_define
 from attrs import field as _attrs_field
 
-T = TypeVar("T", bound="PostCoachingAnalysisResponse200WarningsItem")
+T = TypeVar("T", bound="PostTextToSpeechGenerateWithTimingResponse200Alignment")
 
 
 @_attrs_define
-class PostCoachingAnalysisResponse200WarningsItem:
-    """ """
+class PostTextToSpeechGenerateWithTimingResponse200Alignment:
+    """Object with arrays of equal length: `{ characters: string[], character_start_times_seconds: number[],
+    character_end_times_seconds: number[] }`. Each i-th entry gives the start/end time in seconds of the i-th character
+    of the synthesized audio.
+
+    """
 
     additional_properties: dict[str, Any] = _attrs_field(init=False, factory=dict)
 
     def to_dict(self) -> dict[str, Any]:
+
         field_dict: dict[str, Any] = {}
         field_dict.update(self.additional_properties)
 
@@ -24,10 +29,10 @@ class PostCoachingAnalysisResponse200WarningsItem:
     @classmethod
     def from_dict(cls: type[T], src_dict: Mapping[str, Any]) -> T:
         d = dict(src_dict)
-        post_coaching_analysis_response_200_warnings_item = cls()
+        post_text_to_speech_generate_with_timing_response_200_alignment = cls()
 
-        post_coaching_analysis_response_200_warnings_item.additional_properties = d
-        return post_coaching_analysis_response_200_warnings_item
+        post_text_to_speech_generate_with_timing_response_200_alignment.additional_properties = d
+        return post_text_to_speech_generate_with_timing_response_200_alignment
 
     @property
     def additional_keys(self) -> list[str]:

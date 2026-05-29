@@ -13,6 +13,7 @@ def _get_kwargs(
     *,
     file_id: str,
 ) -> dict[str, Any]:
+
     params: dict[str, Any] = {}
 
     params["fileId"] = file_id

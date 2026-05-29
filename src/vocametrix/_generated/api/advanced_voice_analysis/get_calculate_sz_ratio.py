@@ -24,6 +24,7 @@ def _get_kwargs(
     chunk_duration: float | Unset = UNSET,
     version: str | Unset = UNSET,
 ) -> dict[str, Any]:
+
     params: dict[str, Any] = {}
 
     params["sFileId"] = s_file_id

@@ -16,6 +16,7 @@ def _get_kwargs(
     age: int,
     gender: GetCalculateAmbitusGender,
 ) -> dict[str, Any]:
+
     params: dict[str, Any] = {}
 
     json_sv_file_id = sv_file_id.to_tuple()
