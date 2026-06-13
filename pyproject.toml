@@ -79,6 +79,7 @@ regenerate = "python tasks.py regenerate"
 [tool.ruff]
 line-length = 100
 target-version = "py39"
+extend-exclude = ["src/vocametrix/_generated"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B", "SIM"]

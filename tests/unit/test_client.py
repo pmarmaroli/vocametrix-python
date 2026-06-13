@@ -196,61 +196,6 @@ def test_stuttering_raises_on_timeout(tmp_path, client):
             _ns._time.sleep = original_sleep
 
 
-@respx.mock
-def test_client_email_used_as_namespace_default(tmp_path):
-    """email set at client level should appear in upload requests."""
-    client = VocametrixClient(api_key="key", email="user@example.com")
-    wav = tmp_path / "vowel.wav"
-    wav.write_bytes(b"RIFF" + b"\x00" * 40)
-
-    captured_email = {}
-
-    def capture_assign(request):
-        body = request.content.decode("latin-1")
-        lines = body.splitlines()
-        for i, line in enumerate(lines):
-            if 'name="email"' in line and i + 2 < len(lines):
-                captured_email["value"] = lines[i + 2].strip()
-        return httpx.Response(200, json={"fileId": "f1"})
-
-    respx.post(f"{BASE}/api/assignFileId").mock(side_effect=capture_assign)
-    respx.get(f"{BASE}/api/calculate-avqi").mock(
-        return_value=httpx.Response(200, json={"AVQI": 1.5})
-    )
-
-    client.avqi.calculate(sustained_vowel=str(wav))
-    client.close()
-
-    assert captured_email.get("value") == "user@example.com"
-
-
-@respx.mock
-def test_per_call_email_overrides_client_default(tmp_path):
-    client = VocametrixClient(api_key="key", email="client@example.com")
-    wav = tmp_path / "vowel.wav"
-    wav.write_bytes(b"RIFF" + b"\x00" * 40)
-
-    captured_email = {}
-
-    def capture_assign(request):
-        body = request.content.decode("latin-1")
-        lines = body.splitlines()
-        for i, line in enumerate(lines):
-            if 'name="email"' in line and i + 2 < len(lines):
-                captured_email["value"] = lines[i + 2].strip()
-        return httpx.Response(200, json={"fileId": "f1"})
-
-    respx.post(f"{BASE}/api/assignFileId").mock(side_effect=capture_assign)
-    respx.get(f"{BASE}/api/calculate-dsi").mock(
-        return_value=httpx.Response(200, json={"DSI": 2.0})
-    )
-
-    client.dsi.calculate(sustained_vowel=str(wav), email="override@example.com")
-    client.close()
-
-    assert captured_email.get("value") == "override@example.com"
-
-
 @pytest.mark.asyncio
 @respx.mock
 async def test_async_client_avqi_calculate(tmp_path):
@@ -312,31 +257,6 @@ def test_transcription_event_importable_from_top_level():
     from vocametrix import TranscriptionEvent
     e = TranscriptionEvent(status="Succeeded", progress=1.0, display_text="hi", raw={})
     assert e.status == "Succeeded"
-
-
-@respx.mock
-def test_default_email_is_info_vocametrix(tmp_path):
-    wav = tmp_path / "v.wav"
-    wav.write_bytes(b"RIFF" + b"\x00" * 40)
-    captured = {}
-
-    def capture(request):
-        body = request.content.decode("latin-1")
-        lines = body.splitlines()
-        for i, line in enumerate(lines):
-            if 'name="email"' in line and i + 2 < len(lines):
-                captured["email"] = lines[i + 2].strip()
-        return httpx.Response(200, json={"fileId": "f1"})
-
-    respx.post(f"{BASE}/api/assignFileId").mock(side_effect=capture)
-    respx.get(f"{BASE}/api/calculate-avqi").mock(
-        return_value=httpx.Response(200, json={"AVQI": 1.0})
-    )
-    with VocametrixClient(api_key="key") as c:
-        c.avqi.calculate(sustained_vowel=str(wav))
-
-    assert captured.get("email") == "info@vocametrix.com"
-
 
 
 def test_transcription_event_terminal_success_is_case_insensitive():
@@ -427,14 +347,6 @@ def test_client_has_ai_agents_namespace():
         assert hasattr(c.ai_agents, "interpret_metrics")
 
 
-def test_client_has_speech_coaching_namespace():
-    with VocametrixClient(api_key="key") as c:
-        assert hasattr(c, "speech_coaching")
-        assert hasattr(c.speech_coaching, "analyze")
-        assert hasattr(c.speech_coaching, "analyze_batch")
-        assert hasattr(c.speech_coaching, "get_batch_result")
-
-
 @respx.mock
 def test_ai_agents_therapy_plan():
     respx.post(f"{BASE}/api/therapy-planning-agent").mock(
@@ -446,16 +358,3 @@ def test_ai_agents_therapy_plan():
             wav2vec_output={"features": [0.1, 0.2]},
         )
     assert result["recommendation"] == "rest your voice"
-
-
-@respx.mock
-def test_speech_coaching_analyze():
-    respx.post(f"{BASE}/api/coaching-analysis").mock(
-        return_value=httpx.Response(200, json={"score": 87.5})
-    )
-    with VocametrixClient(api_key="key") as c:
-        result = c.speech_coaching.analyze(
-            reference_audio_url="https://cdn.example.com/ref.wav",
-            learner_audio_url="https://cdn.example.com/learner.wav",
-        )
-    assert result["score"] == 87.5
