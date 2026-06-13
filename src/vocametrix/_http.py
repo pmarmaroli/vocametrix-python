@@ -281,8 +281,14 @@ async def upload_assign_file_id_async(
     client: "httpx.AsyncClient",
     base_url: str,
     audio: AudioInput,
-    email: str = "info@vocametrix.com",
+    email: Optional[str] = None,  # deprecated, ignored — kept for back-compat
 ) -> str:
+    """Async counterpart of :func:`upload_assign_file_id`.
+
+    The `email` parameter is deprecated and ignored; usage-tracking opt-out
+    is keyed on the API key server-side, so the SDK no longer sends it.
+    """
+    del email  # explicitly unused
     content_type = _audio_content_type(audio)
     with _open_audio(audio) as (f, fname):
         resp = await request_with_retry_async(
@@ -290,7 +296,6 @@ async def upload_assign_file_id_async(
             "POST",
             f"{base_url}/api/assignFileId",
             files={"audio": (fname, f, content_type)},
-            data={"email": email},
         )
     return resp.json()["fileId"]
 
